@@ -76,8 +76,10 @@ def run_query(query: str) -> Dict[str, Any]:
         return {
             "query": query,
             "augmented_query": augmented_query,
-            "answer": "No relevant Supreme Court judgments found for your query. "
-                      "Please rephrase or ask a question about Indian law.",
+            "answer": "Your query doesn't appear to relate to Indian law. "
+            "NyayaSetu can answer questions about Supreme Court judgments, "
+            "constitutional rights, statutes, and legal provisions. "
+            "Please ask a legal question.",
             "sources": [],
             "verification_status": "No sources retrieved",
             "unverified_quotes": [],
