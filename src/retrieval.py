@@ -25,7 +25,7 @@ TOP_K = 5
 # Similarity threshold — if best score is below this, query is out of domain
 # Score range: 0 to 1 (cosine similarity with normalized vectors)
 # 0.3 = very loose match, 0.5 = decent match, 0.7 = strong match
-SIMILARITY_THRESHOLD = 0.35
+SIMILARITY_THRESHOLD = 0.45
 
 def _load_resources():
     """Load index, metadata and parent store. Called once at module import."""
