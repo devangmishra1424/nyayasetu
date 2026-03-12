@@ -21,18 +21,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # ── Startup: Download models from HuggingFace Hub ────────────
 def download_models():
-    """
-    Downloads NER model and FAISS index from HF Hub at container startup.
-    Only downloads if files don't already exist.
-    Skips gracefully if HF_TOKEN is not set.
-    """
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
-        logger.warning("HF_TOKEN not set — skipping model download. Models must exist locally.")
+        logger.warning("HF_TOKEN not set — skipping model download.")
         return
 
     try:
-        from huggingface_hub import snapshot_download
+        from huggingface_hub import snapshot_download, hf_hub_download
         repo_id = "CaffeinatedCoding/nyayasetu-models"
 
         # NER model
@@ -52,10 +47,18 @@ def download_models():
         # FAISS index + chunk metadata
         if not os.path.exists("models/faiss_index/index.faiss"):
             logger.info("Downloading FAISS index from HuggingFace Hub...")
-            snapshot_download(
+            os.makedirs("models/faiss_index", exist_ok=True)
+            hf_hub_download(
                 repo_id=repo_id,
+                filename="faiss_index/index.faiss",
                 repo_type="model",
-                allow_patterns="faiss_index/*",
+                local_dir="models",
+                token=hf_token
+            )
+            hf_hub_download(
+                repo_id=repo_id,
+                filename="faiss_index/chunk_metadata.jsonl",
+                repo_type="model",
                 local_dir="models",
                 token=hf_token
             )
@@ -63,14 +66,14 @@ def download_models():
         else:
             logger.info("FAISS index already exists, skipping download")
 
-        # Parent judgments → goes into data/ folder
+        # Parent judgments
         if not os.path.exists("data/parent_judgments.jsonl"):
             logger.info("Downloading parent judgments from HuggingFace Hub...")
             os.makedirs("data", exist_ok=True)
-            snapshot_download(
+            hf_hub_download(
                 repo_id=repo_id,
+                filename="parent_judgments.jsonl",
                 repo_type="model",
-                allow_patterns="parent_judgments.jsonl",
                 local_dir="data",
                 token=hf_token
             )
