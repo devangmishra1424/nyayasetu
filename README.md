@@ -1,3 +1,13 @@
+---
+title: NyayaSetu
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+
 ## Performance
 
 | Query | Top Result | Score | Verified |
