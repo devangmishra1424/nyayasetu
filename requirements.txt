@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+huggingface_hub
+sentence-transformers
+numpy
+groq
+tenacity
+python-dotenv
+transformers
+faiss-cpu
+torch
+kagglehub
+pytest
