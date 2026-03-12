@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.git/
+.dvc/cache/
+data/
+logs/
+*.log
+bug_log.md
