@@ -22,25 +22,28 @@ METADATA_PATH = os.getenv("METADATA_PATH", "models/faiss_index/chunk_metadata.js
 PARENT_PATH = os.getenv("PARENT_PATH", "data/parent_judgments.jsonl")
 TOP_K = 5
 
-# Similarity threshold — if best score is below this, query is out of domain
-# Score range: 0 to 1 (cosine similarity with normalized vectors)
-# 0.3 = very loose match, 0.5 = decent match, 0.7 = strong match
-SIMILARITY_THRESHOLD = 0.45
+# Similarity threshold for out-of-domain detection.
+# This index uses L2 distance — HIGHER score = FURTHER AWAY = worse match.
+# Legal queries typically score 0.6 - 0.8.
+# Out-of-domain queries (cricket, Bollywood) score 0.9+.
+# Block anything where the best match is above this threshold.
+SIMILARITY_THRESHOLD = 0.85
+
 
 def _load_resources():
     """Load index, metadata and parent store. Called once at module import."""
-    
+
     print("Loading FAISS index...")
     index = faiss.read_index(INDEX_PATH)
     print(f"Index loaded: {index.ntotal} vectors")
-    
+
     print("Loading chunk metadata...")
     metadata = []
     with open(METADATA_PATH, "r", encoding="utf-8") as f:
         for line in f:
             metadata.append(json.loads(line))
     print(f"Metadata loaded: {len(metadata)} chunks")
-    
+
     print("Loading parent judgments...")
     parent_store = {}
     with open(PARENT_PATH, "r", encoding="utf-8") as f:
@@ -48,7 +51,7 @@ def _load_resources():
             parent = json.loads(line)
             parent_store[parent["judgment_id"]] = parent["text"]
     print(f"Parent store loaded: {len(parent_store)} judgments")
-    
+
     return index, metadata, parent_store
 
 _index, _metadata, _parent_store = _load_resources()
@@ -57,28 +60,32 @@ _index, _metadata, _parent_store = _load_resources()
 def retrieve(query_embedding: np.ndarray, top_k: int = TOP_K) -> List[Dict]:
     """
     Find top-k chunks most similar to the query embedding.
-    Returns empty list if best score is below SIMILARITY_THRESHOLD
-    (meaning the query is likely out of domain).
+    Returns empty list if best score is above SIMILARITY_THRESHOLD
+    (meaning the query is likely out of domain — no close match found).
+
+    L2 distance logic:
+        low score  = close match = good = let through
+        high score = far match   = bad  = block
     """
     query_vec = query_embedding.reshape(1, -1).astype(np.float32)
     scores, indices = _index.search(query_vec, top_k)
-    
-    # Check if best match is above threshold
+
+    # Block if even the best match is too far away
     best_score = float(scores[0][0])
-    if best_score < SIMILARITY_THRESHOLD:
+    if best_score > SIMILARITY_THRESHOLD:
         return []  # Out of domain — agent will handle this
-    
+
     results = []
     for score, idx in zip(scores[0], indices[0]):
         if idx == -1:
             continue
-        
+
         chunk = _metadata[idx]
         expanded = _get_expanded_context(
             chunk["judgment_id"],
             chunk["text"]
         )
-        
+
         results.append({
             "chunk_id": chunk["chunk_id"],
             "judgment_id": chunk["judgment_id"],
@@ -88,7 +95,7 @@ def retrieve(query_embedding: np.ndarray, top_k: int = TOP_K) -> List[Dict]:
             "expanded_context": expanded,
             "similarity_score": float(score)
         })
-    
+
     return results
 
 
@@ -105,16 +112,16 @@ def _get_expanded_context(judgment_id: str, chunk_text: str) -> str:
     parent_text = _parent_store.get(judgment_id, "")
     if not parent_text:
         return chunk_text
-    
+
     # Find chunk position in parent
     anchor = chunk_text[:80]
     start_pos = parent_text.find(anchor)
     if start_pos == -1:
         return chunk_text
-    
+
     # ~4 chars per token, 1024 tokens = ~4096 chars
     WINDOW = 4096
     expand_start = max(0, start_pos - WINDOW // 4)
     expand_end = min(len(parent_text), start_pos + WINDOW)
-    
+
     return parent_text[expand_start:expand_end]

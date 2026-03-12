@@ -1,45 +1,73 @@
 """
-Citation verification. Deterministic string matching — no ML.
+Citation verification module.
+Checks whether quoted phrases in LLM answer appear in retrieved context.
 
-LOGIC:
-- Extract all quoted phrases (in double quotes) from LLM answer
-- Check each phrase verbatim against all retrieved chunk texts
-- ALL found → Verified
-- ANY missing → Unverified  
-- No quotes in answer → Verified (no verifiable claim made)
-
-DOCUMENTED LIMITATION:
-Paraphrased claims that are not quoted pass as Verified.
-Full NLI-based verification is out of scope — documented in README.
+Deterministic — no ML inference.
+Documented limitation: paraphrases pass as verified because
+exact paraphrase matching requires NLI which is out of scope.
 """
 
 import re
-from typing import List, Dict, Tuple
+import unicodedata
 
-def extract_quotes(text: str) -> List[str]:
-    """Extract double-quoted phrases of at least 8 characters."""
-    return re.findall(r'"([^"]{8,})"', text)
 
-def verify_citations(
-    llm_answer: str,
-    retrieved_chunks: List[Dict]
-) -> Tuple[str, List[str]]:
+def _normalise(text: str) -> str:
+    """Lowercase, strip punctuation, collapse whitespace."""
+    text = text.lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = re.sub(r"[^\w\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _extract_quotes(text: str) -> list[str]:
+    """Extract all quoted phrases from text."""
+    patterns = [
+        r'"([^"]{10,})"',      # standard double quotes
+        r'\u201c([^\u201d]{10,})\u201d',  # curly double quotes
+        r"'([^']{10,})'",      # single quotes
+    ]
+    quotes = []
+    for pattern in patterns:
+        found = re.findall(pattern, text)
+        quotes.extend(found)
+    return quotes
+
+
+def verify_citations(answer: str, contexts: list[dict]) -> tuple[bool, list[str]]:
     """
-    Returns (status, unverified_quotes).
-    status: "Verified" | "Unverified" | "No verifiable claims"
+    Check whether quoted phrases in answer appear in context windows.
+
+    Returns:
+        (verified: bool, unverified_quotes: list[str])
+
+    Logic:
+        - Extract all quoted phrases from answer
+        - If no quotes: return (True, []) — no verifiable claims made
+        - For each quote: check if normalised quote is substring of any normalised context
+        - If ALL quotes found: (True, [])
+        - If ANY quote not found: (False, [list of missing quotes])
     """
-    quotes = extract_quotes(llm_answer)
-    
+    quotes = _extract_quotes(answer)
+
     if not quotes:
-        return "No verifiable claims", []
-    
-    all_context = " ".join(
-        c.get("expanded_context", c.get("chunk_text", ""))
-        for c in retrieved_chunks
-    ).lower()
-    
-    unverified = [q for q in quotes if q.lower() not in all_context]
-    
+        return True, []
+
+    # Build normalised context corpus
+    all_context_text = " ".join(
+        _normalise(ctx.get("text", "") or ctx.get("excerpt", ""))
+        for ctx in contexts
+    )
+
+    unverified = []
+    for quote in quotes:
+        normalised_quote = _normalise(quote)
+        # Skip very short normalised quotes — likely artifacts
+        if len(normalised_quote) < 8:
+            continue
+        if normalised_quote not in all_context_text:
+            unverified.append(quote)
+
     if unverified:
-        return "Unverified", unverified
-    return "Verified", []
+        return False, unverified
+    return True, []
