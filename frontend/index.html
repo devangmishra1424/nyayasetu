@@ -1,75 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NyayaSetu — Indian Legal Research</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="app-layout">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <span class="logo-icon">⚖️</span>
-        <span class="logo-text">NyayaSetu</span>
-      </div>
-      <div class="sidebar-tagline">Indian Legal Research</div>
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-label">RECENT QUERIES</div>
-      <div id="history-list" class="history-list">
-        <div class="history-empty">No queries yet</div>
-      </div>
-      <div class="sidebar-footer">
-        <div class="disclaimer-badge">⚠ Not Legal Advice</div>
-      </div>
-    </aside>
+<div class="app-layout">
 
-    <!-- Main content -->
-    <main class="main-content">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">⚖</div>
+      <div class="brand-text">
+        <span class="brand-name">NyayaSetu</span>
+        <span class="brand-sub">Legal Research</span>
+      </div>
+    </div>
 
-      <!-- Welcome screen (shown when no query has been made) -->
-      <div id="welcome-screen" class="welcome-screen">
-        <div class="welcome-title">NyayaSetu</div>
-        <div class="welcome-subtitle">Ask questions about Indian Supreme Court judgments<br>from 1950 to 2024</div>
-        <div class="suggestion-grid">
-          <div class="suggestion-card" onclick="fillQuery(this)">What are the fundamental rights under the Indian Constitution?</div>
-          <div class="suggestion-card" onclick="fillQuery(this)">What is the right to privacy under Article 21?</div>
-          <div class="suggestion-card" onclick="fillQuery(this)">What does the Supreme Court say about bail in non-bailable offences?</div>
-          <div class="suggestion-card" onclick="fillQuery(this)">What are the limits on freedom of speech under Article 19?</div>
-          <div class="suggestion-card" onclick="fillQuery(this)">What is the basic structure doctrine of the Constitution?</div>
-          <div class="suggestion-card" onclick="fillQuery(this)">How has the Supreme Court interpreted Article 14 on equality?</div>
+    <button class="new-chat-btn" onclick="newChat()">
+      <span class="new-chat-icon">＋</span>
+      New Research Session
+    </button>
+
+    <div class="sidebar-section-label">SESSIONS</div>
+    <div id="sessions-list" class="sessions-list">
+      <div class="sessions-empty">No sessions yet</div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="footer-disclaimer">
+        <span class="disclaimer-icon">⚠</span>
+        <span>Not legal advice. Consult a qualified advocate.</span>
+      </div>
+      <div class="footer-meta">
+        Supreme Court of India · 1950–2024<br>
+        443,598 judgment chunks indexed
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main-wrapper">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title" id="topbar-title">New Research Session</span>
+      </div>
+      <div class="topbar-right">
+        <div class="status-pill" id="status-pill">
+          <span class="status-dot"></span>
+          <span id="status-text">Ready</span>
         </div>
       </div>
+    </header>
 
-      <!-- Chat area (shown after first query) -->
-      <div id="chat-area" class="chat-area hidden">
-        <div id="messages" class="messages"></div>
+    <!-- ── WELCOME SCREEN ── -->
+    <div id="screen-welcome" class="screen screen-welcome active">
+      <div class="welcome-inner">
+        <div class="welcome-emblem">⚖</div>
+        <h1 class="welcome-heading">Ask Indian Law</h1>
+        <p class="welcome-body">
+          Search across 26,688 Supreme Court judgments.<br>
+          Every answer is cited. Every source is traceable.
+        </p>
+        <div class="suggestion-grid">
+          <button class="suggestion-pill" onclick="usesuggestion(this)">What are fundamental rights under the Constitution?</button>
+          <button class="suggestion-pill" onclick="usesuggestion(this)">What is the right to privacy under Article 21?</button>
+          <button class="suggestion-pill" onclick="usesuggestion(this)">How does the Supreme Court define bail in non-bailable offences?</button>
+          <button class="suggestion-pill" onclick="usesuggestion(this)">What is the basic structure doctrine?</button>
+          <button class="suggestion-pill" onclick="usesuggestion(this)">What does Article 15 prohibit?</button>
+          <button class="suggestion-pill" onclick="usesuggestion(this)">How is freedom of speech limited under Article 19?</button>
+        </div>
       </div>
+    </div>
 
-      <!-- Input bar -->
-      <div class="input-bar">
+    <!-- ── CHAT SCREEN ── -->
+    <div id="screen-chat" class="screen screen-chat">
+      <div id="messages-container" class="messages-container">
+        <div id="messages-list" class="messages-list"></div>
+      </div>
+    </div>
+
+    <!-- ── SOURCES PANEL ── -->
+    <div id="sources-panel" class="sources-panel">
+      <div class="sources-panel-header">
+        <span class="sources-panel-title">Sources</span>
+        <button class="sources-panel-close" onclick="closeSourcesPanel()">✕</button>
+      </div>
+      <div id="sources-panel-body" class="sources-panel-body"></div>
+    </div>
+    <div id="sources-overlay" class="sources-overlay" onclick="closeSourcesPanel()"></div>
+
+    <!-- ── INPUT ── -->
+    <div class="input-zone">
+      <div class="input-box">
         <textarea
           id="query-input"
-          class="query-input"
-          placeholder="Ask a legal question about Indian Supreme Court judgments..."
+          class="query-textarea"
+          placeholder="Ask a question about Indian law…"
           rows="1"
           maxlength="1000"
         ></textarea>
         <button id="send-btn" class="send-btn" onclick="submitQuery()">
-          <span id="send-icon">→</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
         </button>
       </div>
-      <div class="input-footer">
-        NyayaSetu is not a substitute for professional legal advice. Always consult a qualified advocate.
-      </div>
+      <p class="input-disclaimer">NyayaSetu is not a substitute for professional legal advice.</p>
+    </div>
 
-    </main>
   </div>
+</div>
 
-  <script src="/static/app.js"></script>
+<script src="/static/app.js"></script>
 </body>
 </html>

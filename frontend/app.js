@@ -1,53 +1,116 @@
-// Set to "" for HuggingFace (same origin), or "http://localhost:8000" for local dev
-const API_BASE = "";
+// ── Config ──────────────────────────────────────────────────────
+const API_BASE = ""; // "" = same origin (HF Spaces). "http://localhost:8000" for local dev.
 
+// ── State ───────────────────────────────────────────────────────
+let sessions = [];          // [{id, title, messages:[]}]
+let activeSessionId = null;
 let isLoading = false;
 
-// Auto-resize textarea
-const input = document.getElementById("query-input");
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 120) + "px";
+// ── Init ────────────────────────────────────────────────────────
+const textarea  = document.getElementById("query-input");
+const sendBtn   = document.getElementById("send-btn");
+const msgsList  = document.getElementById("messages-list");
+
+textarea.addEventListener("input", () => {
+  textarea.style.height = "auto";
+  textarea.style.height = Math.min(textarea.scrollHeight, 140) + "px";
 });
 
-// Submit on Enter (Shift+Enter for newline)
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    submitQuery();
-  }
+textarea.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitQuery(); }
 });
 
-function fillQuery(card) {
-  input.value = card.textContent;
-  input.dispatchEvent(new Event("input"));
-  input.focus();
+// ── Screen switching ─────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
 }
 
+// ── Session management ───────────────────────────────────────────
+function createSession(firstQuery) {
+  const id = Date.now();
+  const title = firstQuery.length > 45
+    ? firstQuery.substring(0, 45) + "…"
+    : firstQuery;
+  const session = { id, title, messages: [] };
+  sessions.unshift(session);
+  activeSessionId = id;
+  renderSessionsList();
+  return session;
+}
+
+function getActiveSession() {
+  return sessions.find(s => s.id === activeSessionId);
+}
+
+function switchSession(id) {
+  activeSessionId = id;
+  renderSessionsList();
+  renderMessages();
+  showScreen("chat");
+  const session = getActiveSession();
+  document.getElementById("topbar-title").textContent = session.title;
+}
+
+function newChat() {
+  activeSessionId = null;
+  msgsList.innerHTML = "";
+  showScreen("welcome");
+  document.getElementById("topbar-title").textContent = "New Research Session";
+  renderSessionsList();
+  textarea.focus();
+}
+
+function renderSessionsList() {
+  const list = document.getElementById("sessions-list");
+  if (sessions.length === 0) {
+    list.innerHTML = '<div class="sessions-empty">No sessions yet</div>';
+    return;
+  }
+  list.innerHTML = sessions.map(s => `
+    <div class="session-item ${s.id === activeSessionId ? "active" : ""}"
+         onclick="switchSession(${s.id})">
+      <div class="session-dot"></div>
+      <span class="session-label">${escHtml(s.title)}</span>
+      <span class="session-count">${s.messages.filter(m => m.role === "ai").length}</span>
+    </div>
+  `).join("");
+}
+
+function renderMessages() {
+  const session = getActiveSession();
+  if (!session) return;
+  msgsList.innerHTML = "";
+  session.messages.forEach(msg => {
+    if (msg.role === "user") appendUserBubble(msg.text, false);
+    else if (msg.role === "ai") appendAIBubble(msg.data, false);
+    else if (msg.role === "error") appendErrorBubble(msg.text, false);
+  });
+  scrollBottom();
+}
+
+// ── Submit ───────────────────────────────────────────────────────
 async function submitQuery() {
-  const query = input.value.trim();
+  const query = textarea.value.trim();
   if (!query || isLoading) return;
-  if (query.length < 10) { alert("Query too short — minimum 10 characters"); return; }
-  if (query.length > 1000) { alert("Query too long — maximum 1000 characters"); return; }
+  if (query.length < 10) { showToast("Query too short — minimum 10 characters."); return; }
+  if (query.length > 1000) { showToast("Query too long — maximum 1000 characters."); return; }
 
-  // Switch from welcome to chat
-  document.getElementById("welcome-screen").classList.add("hidden");
-  document.getElementById("chat-area").classList.remove("hidden");
+  // First message in this chat — create session and switch screen
+  if (!activeSessionId) {
+    createSession(query);
+    showScreen("chat");
+    document.getElementById("topbar-title").textContent = getActiveSession().title;
+  }
 
-  // Clear input
-  input.value = "";
-  input.style.height = "auto";
+  // Save user message to session
+  getActiveSession().messages.push({ role: "user", text: query });
 
-  // Add to history
-  addToHistory(query);
+  textarea.value = "";
+  textarea.style.height = "auto";
 
-  // Add user bubble
-  appendMessage("user", query);
-
-  // Add loading bubble
-  const loadingId = appendLoading();
-
-  // Disable button
+  appendUserBubble(query);
+  const loaderId = appendLoader();
   setLoading(true);
 
   try {
@@ -58,159 +121,181 @@ async function submitQuery() {
     });
 
     const data = await res.json();
-    removeLoading(loadingId);
+    removeLoader(loaderId);
 
     if (!res.ok) {
-      appendError(data.detail || "Something went wrong. Please try again.");
+      const msg = data.detail || "Something went wrong. Please try again.";
+      getActiveSession().messages.push({ role: "error", text: msg });
+      appendErrorBubble(msg);
     } else {
-      appendAnswer(data);
+      getActiveSession().messages.push({ role: "ai", data });
+      appendAIBubble(data);
     }
+
   } catch (err) {
-    removeLoading(loadingId);
-    appendError("Could not reach the server. Please check your connection.");
+    removeLoader(loaderId);
+    const msg = "Could not reach the server. The Space may be waking up — try again in 30 seconds.";
+    getActiveSession().messages.push({ role: "error", text: msg });
+    appendErrorBubble(msg);
   }
 
   setLoading(false);
-  scrollToBottom();
+  scrollBottom();
 }
 
-function appendMessage(type, text) {
-  const messages = document.getElementById("messages");
-  const div = document.createElement("div");
-  div.className = `message message-${type}`;
-  div.innerHTML = `<div class="bubble-${type}">${escapeHtml(text)}</div>`;
-  messages.appendChild(div);
-  scrollToBottom();
+function usesuggestion(el) {
+  textarea.value = el.textContent;
+  textarea.dispatchEvent(new Event("input"));
+  submitQuery();
 }
 
-function appendAnswer(data) {
-  const messages = document.getElementById("messages");
+// ── Bubble renderers ─────────────────────────────────────────────
+function appendUserBubble(text, scroll = true) {
   const div = document.createElement("div");
-  div.className = "message message-ai";
+  div.className = "msg msg-user";
+  div.innerHTML = `<div class="bubble-user">${escHtml(text)}</div>`;
+  msgsList.appendChild(div);
+  if (scroll) scrollBottom();
+}
 
-  const verified = data.verification_status === "verified";
-  const badge = verified
-    ? `<span class="verification-badge badge-verified">✓ Verified</span>`
-    : `<span class="verification-badge badge-unverified">⚠ Unverified</span>`;
+function appendAIBubble(data, scroll = true) {
+  const verified = data.verification_status === true || data.verification_status === "verified";
+  const badgeClass = verified ? "verified" : "unverified";
+  const badgeText  = verified ? "✓ Verified" : "⚠ Unverified";
 
   const truncNote = data.truncated
-    ? `<div style="font-size:11px;color:#9aa3b2;margin-top:8px;">Only 3 of 5 retrieved documents used due to context length.</div>`
+    ? `<div class="truncated-note">3 of 5 retrieved documents used — context limit reached.</div>`
     : "";
 
-  // Build sources HTML
-  let sourcesHtml = "";
-  if (data.sources && data.sources.length > 0) {
-    const sourceItems = data.sources.map(s => {
-      const meta = s.meta || {};
-      const id = meta.judgment_id || "Unknown";
-      const year = meta.year || "";
-      const excerpt = (s.text || "").substring(0, 200) + "...";
-      return `
-        <div class="source-card">
-          <div class="source-meta">${escapeHtml(id)}${year ? " · " + year : ""}</div>
-          <div class="source-excerpt">${escapeHtml(excerpt)}</div>
-        </div>`;
-    }).join("");
+  const sourceCount = (data.sources || []).length;
+  const sourcesBtn = sourceCount > 0
+    ? `<button class="sources-btn" onclick='openSources(${escAttr(JSON.stringify(data.sources))})'>
+         📄 ${sourceCount} Source${sourceCount > 1 ? "s" : ""}
+       </button>`
+    : "";
 
-    sourcesHtml = `
-      <div class="sources-section">
-        <button class="sources-toggle" onclick="toggleSources(this)">▶ Sources (${data.sources.length})</button>
-        <div class="sources-list hidden">${sourceItems}</div>
-      </div>`;
-  }
+  const latency = data.latency_ms
+    ? `<span class="latency-label">${Math.round(data.latency_ms)}ms</span>`
+    : "";
 
+  const div = document.createElement("div");
+  div.className = "msg msg-ai";
   div.innerHTML = `
     <div class="bubble-ai">
-      <div>${formatAnswer(data.answer)}</div>
-      ${badge}
+      <div class="bubble-answer">${formatAnswer(data.answer)}</div>
       ${truncNote}
-      ${sourcesHtml}
+      <div class="bubble-meta">
+        <span class="verify-badge ${badgeClass}">${badgeText}</span>
+        ${sourcesBtn}
+        ${latency}
+      </div>
     </div>`;
-
-  messages.appendChild(div);
+  msgsList.appendChild(div);
+  if (scroll) scrollBottom();
 }
 
-function appendError(msg) {
-  const messages = document.getElementById("messages");
+function appendErrorBubble(text, scroll = true) {
   const div = document.createElement("div");
-  div.className = "message message-ai";
-  div.innerHTML = `
-    <div class="bubble-ai" style="border-left-color:#e05252; color:#e8a0a0;">
-      ⚠ ${escapeHtml(msg)}
-    </div>`;
-  messages.appendChild(div);
+  div.className = "msg msg-ai";
+  div.innerHTML = `<div class="bubble-error">⚠ ${escHtml(text)}</div>`;
+  msgsList.appendChild(div);
+  if (scroll) scrollBottom();
 }
 
-function appendLoading() {
-  const messages = document.getElementById("messages");
-  const id = "loading-" + Date.now();
+function appendLoader() {
+  const id = "loader-" + Date.now();
   const div = document.createElement("div");
   div.id = id;
-  div.className = "message message-ai";
+  div.className = "msg msg-ai";
   div.innerHTML = `
     <div class="bubble-ai bubble-loading">
-      <div class="loading-dots">
-        <span></span><span></span><span></span>
-      </div>
-      Searching judgments...
+      <div class="dots"><span></span><span></span><span></span></div>
+      Searching judgments…
     </div>`;
-  messages.appendChild(div);
-  scrollToBottom();
+  msgsList.appendChild(div);
+  scrollBottom();
   return id;
 }
 
-function removeLoading(id) {
+function removeLoader(id) {
   const el = document.getElementById(id);
   if (el) el.remove();
 }
 
-function toggleSources(btn) {
-  const list = btn.nextElementSibling;
-  const isHidden = list.classList.contains("hidden");
-  list.classList.toggle("hidden");
-  btn.textContent = (isHidden ? "▼" : "▶") + btn.textContent.slice(1);
+// ── Sources panel ────────────────────────────────────────────────
+function openSources(sources) {
+  const panel  = document.getElementById("sources-panel");
+  const overlay = document.getElementById("sources-overlay");
+  const body   = document.getElementById("sources-panel-body");
+
+  body.innerHTML = sources.map((s, i) => {
+    const meta    = s.meta || {};
+    const id      = meta.judgment_id || "Unknown";
+    const year    = meta.year ? ` · ${meta.year}` : "";
+    const excerpt = (s.text || "").trim().substring(0, 400);
+    return `
+      <div class="source-card">
+        <div class="source-num">${i + 1}</div>
+        <div class="source-id">${escHtml(id)}</div>
+        <div class="source-year">Supreme Court of India${year}</div>
+        <div class="source-excerpt">${escHtml(excerpt)}${s.text && s.text.length > 400 ? "…" : ""}</div>
+      </div>`;
+  }).join("");
+
+  panel.classList.add("open");
+  overlay.classList.add("open");
+  // Trigger CSS transition
+  requestAnimationFrame(() => { panel.style.transform = "translateX(0)"; });
 }
 
-function addToHistory(query) {
-  const list = document.getElementById("history-list");
-  const empty = list.querySelector(".history-empty");
-  if (empty) empty.remove();
-
-  const item = document.createElement("div");
-  item.className = "history-item";
-  item.title = query;
-  item.textContent = query.length > 40 ? query.substring(0, 40) + "…" : query;
-  list.insertBefore(item, list.firstChild);
-
-  // Keep max 10 items
-  const items = list.querySelectorAll(".history-item");
-  if (items.length > 10) items[items.length - 1].remove();
+function closeSourcesPanel() {
+  const panel   = document.getElementById("sources-panel");
+  const overlay = document.getElementById("sources-overlay");
+  panel.classList.remove("open");
+  overlay.classList.remove("open");
 }
 
+// ── Helpers ──────────────────────────────────────────────────────
 function setLoading(state) {
   isLoading = state;
-  const btn = document.getElementById("send-btn");
-  btn.disabled = state;
-  document.getElementById("send-icon").textContent = state ? "…" : "→";
+  sendBtn.disabled = state;
+  const pill = document.getElementById("status-pill");
+  const text = document.getElementById("status-text");
+  if (state) {
+    pill.classList.add("loading");
+    text.textContent = "Searching…";
+  } else {
+    pill.classList.remove("loading");
+    text.textContent = "Ready";
+  }
 }
 
-function scrollToBottom() {
-  const chat = document.getElementById("chat-area");
-  chat.scrollTop = chat.scrollHeight;
+function scrollBottom() {
+  const c = document.querySelector(".messages-container");
+  if (c) c.scrollTop = c.scrollHeight;
 }
 
-function escapeHtml(text) {
-  return String(text)
+function escHtml(str) {
+  return String(str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
 
+function escAttr(str) {
+  return String(str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+}
+
 function formatAnswer(text) {
-  // Convert newlines to paragraphs
-  return text
+  // Split double newlines into paragraphs, single newlines into line breaks
+  return (text || "")
     .split(/\n\n+/)
-    .map(p => `<p>${escapeHtml(p.trim())}</p>`)
+    .map(para => `<p>${escHtml(para.trim()).replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function showToast(msg) {
+  // Simple alert fallback — can be styled later
+  alert(msg);
 }
