@@ -1,3 +1,21 @@
+---
+title: NyayaSetu
+emoji: ⚖️
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
+# NyayaSetu — Indian Legal RAG Agent
+
+Ask questions about Indian Supreme Court judgments (1950–2024).
+
+**Live API:** POST `/query` with `{"query": "your legal question"}`
+
+> Not legal advice. Always consult a qualified advocate.
+
+
 # NyayaSetu — Indian Legal RAG Agent
 
 > Retrieval-Augmented Generation over 26,688 Supreme Court of India judgments (1950–2024).  
