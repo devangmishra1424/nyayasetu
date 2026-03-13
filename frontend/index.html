@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NyayaSetu — Indian Legal Research</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-icon">⚖️</span>
+        <span class="logo-text">NyayaSetu</span>
+      </div>
+      <div class="sidebar-tagline">Indian Legal Research</div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-label">RECENT QUERIES</div>
+      <div id="history-list" class="history-list">
+        <div class="history-empty">No queries yet</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="disclaimer-badge">⚠ Not Legal Advice</div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <!-- Welcome screen (shown when no query has been made) -->
+      <div id="welcome-screen" class="welcome-screen">
+        <div class="welcome-title">NyayaSetu</div>
+        <div class="welcome-subtitle">Ask questions about Indian Supreme Court judgments<br>from 1950 to 2024</div>
+        <div class="suggestion-grid">
+          <div class="suggestion-card" onclick="fillQuery(this)">What are the fundamental rights under the Indian Constitution?</div>
+          <div class="suggestion-card" onclick="fillQuery(this)">What is the right to privacy under Article 21?</div>
+          <div class="suggestion-card" onclick="fillQuery(this)">What does the Supreme Court say about bail in non-bailable offences?</div>
+          <div class="suggestion-card" onclick="fillQuery(this)">What are the limits on freedom of speech under Article 19?</div>
+          <div class="suggestion-card" onclick="fillQuery(this)">What is the basic structure doctrine of the Constitution?</div>
+          <div class="suggestion-card" onclick="fillQuery(this)">How has the Supreme Court interpreted Article 14 on equality?</div>
+        </div>
+      </div>
+
+      <!-- Chat area (shown after first query) -->
+      <div id="chat-area" class="chat-area hidden">
+        <div id="messages" class="messages"></div>
+      </div>
+
+      <!-- Input bar -->
+      <div class="input-bar">
+        <textarea
+          id="query-input"
+          class="query-input"
+          placeholder="Ask a legal question about Indian Supreme Court judgments..."
+          rows="1"
+          maxlength="1000"
+        ></textarea>
+        <button id="send-btn" class="send-btn" onclick="submitQuery()">
+          <span id="send-icon">→</span>
+        </button>
+      </div>
+      <div class="input-footer">
+        NyayaSetu is not a substitute for professional legal advice. Always consult a qualified advocate.
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

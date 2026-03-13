@@ -1,13 +1,14 @@
 """
 NyayaSetu FastAPI application.
-3 endpoints only.
-
+3 endpoints + static frontend serving.
 All models loaded at startup — never per request.
 Port 7860 for HuggingFace Spaces compatibility.
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import time
 import os
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# ── Startup: Download models from HuggingFace Hub ────────────
+# ── Startup: Download models from HuggingFace Hub ────────────────
 def download_models():
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
@@ -103,7 +104,11 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ── Request/Response models ───────────────────────────
+# Serve frontend static files
+if os.path.exists("frontend"):
+    app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# ── Request/Response models ──────────────────────────────────────
 class QueryRequest(BaseModel):
     query: str
 
@@ -119,7 +124,25 @@ class QueryResponse(BaseModel):
     latency_ms: float
 
 
-# ── Endpoint 1: Health check ──────────────────────────
+# ── Endpoint 1: Serve frontend ───────────────────────────────────
+@app.get("/")
+def serve_frontend():
+    if os.path.exists("frontend/index.html"):
+        return FileResponse("frontend/index.html")
+    return {
+        "name": "NyayaSetu",
+        "description": "Indian Legal RAG Agent",
+        "data": "Supreme Court of India judgments 1950-2024",
+        "disclaimer": "NOT legal advice. Always consult a qualified advocate.",
+        "endpoints": {
+            "POST /query": "Ask a legal question",
+            "GET /health": "Health check",
+            "GET /": "This page"
+        }
+    }
+
+
+# ── Endpoint 2: Health check ─────────────────────────────────────
 @app.get("/health")
 def health():
     return {
@@ -129,23 +152,7 @@ def health():
     }
 
 
-# ── Endpoint 2: App info ──────────────────────────────
-@app.get("/")
-def root():
-    return {
-        "name": "NyayaSetu",
-        "description": "Indian Legal RAG Agent",
-        "data": "Supreme Court of India judgments 1950-2024",
-        "disclaimer": "NOT legal advice. Always consult a qualified advocate.",
-        "endpoints": {
-            "POST /query": "Ask a legal question",
-            "GET /health": "Health check",
-            "GET /": "This info page"
-        }
-    }
-
-
-# ── Endpoint 3: Main query pipeline ──────────────────
+# ── Endpoint 3: Main query pipeline ──────────────────────────────
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
     if not request.query.strip():
