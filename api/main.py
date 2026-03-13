@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from typing import Union, Any
 import time
 import os
 import sys
@@ -116,7 +117,7 @@ class QueryResponse(BaseModel):
     query: str
     answer: str
     sources: list
-    verification_status: str
+    verification_status: Union[str, bool]   # agent returns bool, string also accepted
     unverified_quotes: list
     entities: dict
     num_sources: int
