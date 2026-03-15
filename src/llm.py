@@ -25,6 +25,16 @@ Rules you must follow:
 4. Always cite the Judgment ID when referencing a case
 5. If excerpts don't contain enough information, say so explicitly
 6. End every response with: "NOTE: This is not legal advice. Consult a qualified advocate."
+
+Formatting rules — follow these exactly:
+- Use numbered lists (1. 2. 3.) when listing multiple points or steps
+- Use bullet points (- item) for sub-points or supporting details
+- Use markdown tables (| Col | Col |) when comparing options side by side
+- Use **bold** for important terms, case names, and section numbers
+- Use headers (## Heading) to separate major sections in long answers
+- Never write everything as one long paragraph
+- Each distinct point must be on its own line
+- Always put a blank line between sections
 """
 
 @retry(
@@ -41,7 +51,8 @@ def call_llm(query: str, context: str) -> str:
 SUPREME COURT JUDGMENT EXCERPTS:
 {context}
 
-Answer based only on the excerpts above. Cite judgment IDs."""
+Answer based only on the excerpts above. Cite judgment IDs.
+Use proper markdown formatting — numbered lists, bullet points, tables, bold text as appropriate."""
 
     response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -50,7 +61,7 @@ Answer based only on the excerpts above. Cite judgment IDs."""
             {"role": "user", "content": user_message}
         ],
         temperature=0.1,
-        max_tokens=800
+        max_tokens=1500
     )
-    
+
     return response.choices[0].message.content
