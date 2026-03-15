@@ -1,352 +1,83 @@
-// ── Config ──────────────────────────────────────────────────────
-const API_BASE = ""; // "" = same origin (HF Spaces). "http://localhost:8000" for local dev.
-
-// ── State ───────────────────────────────────────────────────────
-let sessions = [];          // [{id, title, messages:[]}]
-let activeSessionId = null;
-let isLoading = false;
-
-// ── Init ────────────────────────────────────────────────────────
-const textarea  = document.getElementById("query-input");
-const sendBtn   = document.getElementById("send-btn");
-const msgsList  = document.getElementById("messages-list");
-
-textarea.addEventListener("input", () => {
-  textarea.style.height = "auto";
-  textarea.style.height = Math.min(textarea.scrollHeight, 140) + "px";
-});
-
-textarea.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitQuery(); }
-});
-
-// ── Screen switching ─────────────────────────────────────────────
-function showScreen(name) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("screen-" + name).classList.add("active");
-}
-
-// ── Session management ───────────────────────────────────────────
-function createSession(firstQuery) {
-  const id = Date.now();
-  const title = firstQuery.length > 45
-    ? firstQuery.substring(0, 45) + "…"
-    : firstQuery;
-  const session = { id, title, messages: [] };
-  sessions.unshift(session);
-  activeSessionId = id;
-  renderSessionsList();
-  return session;
-}
-
-function getActiveSession() {
-  return sessions.find(s => s.id === activeSessionId);
-}
-
-function switchSession(id) {
-  activeSessionId = id;
-  renderSessionsList();
-  renderMessages();
-  showScreen("chat");
-  const session = getActiveSession();
-  document.getElementById("topbar-title").textContent = session.title;
-}
-
-function newChat() {
-  activeSessionId = null;
-  msgsList.innerHTML = "";
-  showScreen("welcome");
-  document.getElementById("topbar-title").textContent = "New Research Session";
-  renderSessionsList();
-  textarea.focus();
-}
-
-function renderSessionsList() {
-  const list = document.getElementById("sessions-list");
-  if (sessions.length === 0) {
-    list.innerHTML = '<div class="sessions-empty">No sessions yet</div>';
-    return;
-  }
-  list.innerHTML = sessions.map(s => `
-    <div class="session-item ${s.id === activeSessionId ? "active" : ""}"
-         onclick="switchSession(${s.id})">
-      <div class="session-dot"></div>
-      <span class="session-label">${escHtml(s.title)}</span>
-      <span class="session-count">${s.messages.filter(m => m.role === "ai").length}</span>
-    </div>
-  `).join("");
-}
-
-function renderMessages() {
-  const session = getActiveSession();
-  if (!session) return;
-  msgsList.innerHTML = "";
-  session.messages.forEach(msg => {
-    if (msg.role === "user") appendUserBubble(msg.text, false);
-    else if (msg.role === "ai") appendAIBubble(msg.data, false);
-    else if (msg.role === "error") appendErrorBubble(msg.text, false);
-  });
-  scrollBottom();
-}
-
-// ── Submit ───────────────────────────────────────────────────────
-async function submitQuery() {
-  const query = textarea.value.trim();
-  if (!query || isLoading) return;
-  if (query.length < 10) { showToast("Query too short — minimum 10 characters."); return; }
-  if (query.length > 1000) { showToast("Query too long — maximum 1000 characters."); return; }
-
-  // First message in this chat — create session and switch screen
-  if (!activeSessionId) {
-    createSession(query);
-    showScreen("chat");
-    document.getElementById("topbar-title").textContent = getActiveSession().title;
-  }
-
-  // Save user message to session
-  getActiveSession().messages.push({ role: "user", text: query });
-
-  textarea.value = "";
-  textarea.style.height = "auto";
-
-  appendUserBubble(query);
-  const loaderId = appendLoader();
-  setLoading(true);
-
-  try {
-    const res = await fetch(`${API_BASE}/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query })
-    });
-
-    const data = await res.json();
-    removeLoader(loaderId);
-
-    if (!res.ok) {
-      const msg = data.detail || "Something went wrong. Please try again.";
-      getActiveSession().messages.push({ role: "error", text: msg });
-      appendErrorBubble(msg);
-    } else {
-      getActiveSession().messages.push({ role: "ai", data });
-      appendAIBubble(data);
-    }
-
-  } catch (err) {
-    removeLoader(loaderId);
-    const msg = "Could not reach the server. The Space may be waking up — try again in 30 seconds.";
-    getActiveSession().messages.push({ role: "error", text: msg });
-    appendErrorBubble(msg);
-  }
-
-  setLoading(false);
-  scrollBottom();
-}
-
-function usesuggestion(el) {
-  textarea.value = el.textContent;
-  textarea.dispatchEvent(new Event("input"));
-  submitQuery();
-}
-
-// ── Bubble renderers ─────────────────────────────────────────────
-function appendUserBubble(text, scroll = true) {
-  const div = document.createElement("div");
-  div.className = "msg msg-user";
-  div.innerHTML = `<div class="bubble-user">${escHtml(text)}</div>`;
-  msgsList.appendChild(div);
-  if (scroll) scrollBottom();
-}
-
-function appendAIBubble(data, scroll = true) {
-  const verified = data.verification_status === true || data.verification_status === "verified";
-  const badgeClass = verified ? "verified" : "unverified";
-  const badgeText  = verified ? "✓ Verified" : "⚠ Unverified";
-
-  const truncNote = data.truncated
-    ? `<div class="truncated-note">3 of 5 retrieved documents used — context limit reached.</div>`
-    : "";
-
-  const sourceCount = (data.sources || []).length;
-  const sourcesBtn = sourceCount > 0
-    ? `<button class="sources-btn" onclick='openSources(${escAttr(JSON.stringify(data.sources))})'>
-         📄 ${sourceCount} Source${sourceCount > 1 ? "s" : ""}
-       </button>`
-    : "";
-
-  const latency = data.latency_ms
-    ? `<span class="latency-label">${Math.round(data.latency_ms)}ms</span>`
-    : "";
-
-  const div = document.createElement("div");
-  div.className = "msg msg-ai";
-  div.innerHTML = `
-    <div class="bubble-ai">
-      <div class="bubble-answer">${formatAnswer(data.answer)}</div>
-      ${truncNote}
-      <div class="bubble-meta">
-        <span class="verify-badge ${badgeClass}">${badgeText}</span>
-        ${sourcesBtn}
-        ${latency}
-      </div>
-    </div>`;
-  msgsList.appendChild(div);
-  if (scroll) scrollBottom();
-}
-
-function appendErrorBubble(text, scroll = true) {
-  const div = document.createElement("div");
-  div.className = "msg msg-ai";
-  div.innerHTML = `<div class="bubble-error">⚠ ${escHtml(text)}</div>`;
-  msgsList.appendChild(div);
-  if (scroll) scrollBottom();
-}
-
-function appendLoader() {
-  const id = "loader-" + Date.now();
-  const div = document.createElement("div");
-  div.id = id;
-  div.className = "msg msg-ai";
-  div.innerHTML = `
-    <div class="bubble-ai bubble-loading">
-      <div class="dots"><span></span><span></span><span></span></div>
-      Searching judgments…
-    </div>`;
-  msgsList.appendChild(div);
-  scrollBottom();
-  return id;
-}
-
-function removeLoader(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
-
-// ── Sources panel ────────────────────────────────────────────────
-function openSources(sources) {
-  const panel  = document.getElementById("sources-panel");
-  const overlay = document.getElementById("sources-overlay");
-  const body   = document.getElementById("sources-panel-body");
-
-  body.innerHTML = sources.map((s, i) => {
-    const meta    = s.meta || {};
-    const id      = meta.judgment_id || "Unknown";
-    const year    = meta.year ? ` · ${meta.year}` : "";
-    const excerpt = (s.text || "").trim().substring(0, 400);
-    return `
-      <div class="source-card">
-        <div class="source-num">${i + 1}</div>
-        <div class="source-id">${escHtml(id)}</div>
-        <div class="source-year">Supreme Court of India${year}</div>
-        <div class="source-excerpt">${escHtml(excerpt)}${s.text && s.text.length > 400 ? "…" : ""}</div>
-      </div>`;
-  }).join("");
-
-  panel.classList.add("open");
-  overlay.classList.add("open");
-  // Trigger CSS transition
-  requestAnimationFrame(() => { panel.style.transform = "translateX(0)"; });
-}
-
-function closeSourcesPanel() {
-  const panel   = document.getElementById("sources-panel");
-  const overlay = document.getElementById("sources-overlay");
-  panel.classList.remove("open");
-  overlay.classList.remove("open");
-}
-
-// ── Helpers ──────────────────────────────────────────────────────
-function setLoading(state) {
-  isLoading = state;
-  sendBtn.disabled = state;
-  const pill = document.getElementById("status-pill");
-  const text = document.getElementById("status-text");
-  if (state) {
-    pill.classList.add("loading");
-    text.textContent = "Searching…";
-  } else {
-    pill.classList.remove("loading");
-    text.textContent = "Ready";
-  }
-}
-
-function scrollBottom() {
-  const c = document.querySelector(".messages-container");
-  if (c) c.scrollTop = c.scrollHeight;
-}
-
-function escHtml(str) {
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function escAttr(str) {
-  return String(str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-}
-
 function formatAnswer(text) {
   if (!text) return "";
 
-  let html = text
+  // Split into lines and process each
+  const lines = text.split('\n');
+  let html = '';
+  let inTable = false;
+  let tableHtml = '';
+  let inList = false;
+  let listType = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Table row
+    if (line.trim().startsWith('|')) {
+      if (line.match(/^\|[\s\-|]+\|$/)) continue; // skip separator rows
+      if (!inTable) { tableHtml = '<table class="answer-table">'; inTable = true; }
+      const cells = line.split('|').filter((c, i, a) => i > 0 && i < a.length - 1);
+      const isHeader = i === 0 || !lines[i-1]?.trim().startsWith('|');
+      const tag = isHeader ? 'th' : 'td';
+      tableHtml += '<tr>' + cells.map(c => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
+      continue;
+    } else if (inTable) {
+      html += tableHtml + '</table>';
+      tableHtml = '';
+      inTable = false;
+    }
+
+    // Numbered list
+    if (line.match(/^\d+\.\s+/)) {
+      if (!inList || listType !== 'ol') {
+        if (inList) html += `</${listType}>`;
+        html += '<ol>'; inList = true; listType = 'ol';
+      }
+      html += `<li>${inline(line.replace(/^\d+\.\s+/, ''))}</li>`;
+      continue;
+    }
+
+    // Bullet list (* or -)
+    if (line.match(/^[\*\-]\s+/)) {
+      if (!inList || listType !== 'ul') {
+        if (inList) html += `</${listType}>`;
+        html += '<ul>'; inList = true; listType = 'ul';
+      }
+      html += `<li>${inline(line.replace(/^[\*\-]\s+/, ''))}</li>`;
+      continue;
+    }
+
+    // Close list if needed
+    if (inList && line.trim() === '') {
+      html += `</${listType}>`;
+      inList = false; listType = '';
+    }
+
     // Headers
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    if (line.startsWith('### ')) { html += `<h3>${inline(line.slice(4))}</h3>`; continue; }
+    if (line.startsWith('## '))  { html += `<h2>${inline(line.slice(3))}</h2>`; continue; }
+    if (line.startsWith('# '))   { html += `<h1>${inline(line.slice(2))}</h1>`; continue; }
 
-    // Bold and italic
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Empty line = paragraph break
+    if (line.trim() === '') { html += '<br>'; continue; }
 
-    // Numbered lists
-    .replace(/^\d+\.\s+(.+)$/gm, '<li class="numbered">$1</li>')
+    // Normal line
+    html += `<p>${inline(line)}</p>`;
+  }
 
-    // Bullet lists
-    .replace(/^[-•]\s+(.+)$/gm, '<li class="bullet">$1</li>')
+  // Close any open tags
+  if (inTable) html += tableHtml + '</table>';
+  if (inList) html += `</${listType}>`;
 
-    // Tables — | col | col |
-    .replace(/\|(.+)\|/g, (match) => {
-      const cells = match.split('|').filter(c => c.trim());
-      return '<tr>' + cells.map(c =>
-        c.trim().match(/^[-]+$/)
-          ? ''
-          : `<td>${c.trim()}</td>`
-      ).join('') + '</tr>';
-    })
-
-    // Inline code
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-
-    // Double newline = paragraph break
-    .replace(/\n\n/g, '</p><p>')
-
-    // Single newline = line break
-    .replace(/\n/g, '<br>');
-
-  // Wrap consecutive <li class="numbered"> in <ol>
-  html = html.replace(
-    /(<li class="numbered">.*?<\/li>)+/gs,
-    (match) => `<ol>${match.replace(/class="numbered"/g, '')}</ol>`
-  );
-
-  // Wrap consecutive <li class="bullet"> in <ul>
-  html = html.replace(
-    /(<li class="bullet">.*?<\/li>)+/gs,
-    (match) => `<ul>${match.replace(/class="bullet"/g, '')}</ul>`
-  );
-
-  // Wrap table rows in <table>
-  html = html.replace(
-    /(<tr>.*?<\/tr>)+/gs,
-    (match) => `<table class="answer-table">${match}</table>`
-  );
-
-  return `<p>${html}</p>`;
+  return html;
 }
 
-function showToast(msg) {
-  // Simple alert fallback — can be styled later
-  alert(msg);
+function inline(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
 }
