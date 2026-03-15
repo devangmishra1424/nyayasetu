@@ -10,6 +10,7 @@ on:
       - "Dockerfile"
       - "requirements.txt"
       - "frontend/**"
+      
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
