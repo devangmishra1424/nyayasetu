@@ -96,14 +96,12 @@ async function submitQuery() {
   if (query.length < 10) { showToast("Query too short — minimum 10 characters."); return; }
   if (query.length > 1000) { showToast("Query too long — maximum 1000 characters."); return; }
 
-  // First message in this chat — create session and switch screen
   if (!activeSessionId) {
     createSession(query);
     showScreen("chat");
     document.getElementById("topbar-title").textContent = getActiveSession().title;
   }
 
-  // Save user message to session
   getActiveSession().messages.push({ role: "user", text: query });
 
   textarea.value = "";
@@ -224,9 +222,9 @@ function removeLoader(id) {
 
 // ── Sources panel ────────────────────────────────────────────────
 function openSources(sources) {
-  const panel  = document.getElementById("sources-panel");
+  const panel   = document.getElementById("sources-panel");
   const overlay = document.getElementById("sources-overlay");
-  const body   = document.getElementById("sources-panel-body");
+  const body    = document.getElementById("sources-panel-body");
 
   body.innerHTML = sources.map((s, i) => {
     const meta    = s.meta || {};
@@ -244,7 +242,6 @@ function openSources(sources) {
 
   panel.classList.add("open");
   overlay.classList.add("open");
-  // Trigger CSS transition
   requestAnimationFrame(() => { panel.style.transform = "translateX(0)"; });
 }
 
@@ -287,10 +284,11 @@ function escAttr(str) {
   return String(str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 }
 
+// ── Answer formatter ─────────────────────────────────────────────
 function formatAnswer(text) {
   if (!text) return "";
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // Split into lines and process each
   const lines = text.split('\n');
   let html = '';
   let inTable = false;
@@ -299,21 +297,18 @@ function formatAnswer(text) {
   let listType = '';
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
 
     // Table row
     if (line.trim().startsWith('|')) {
       if (line.match(/^\|[\s\-|]+\|$/)) continue; // skip separator rows
       if (!inTable) { tableHtml = '<table class="answer-table">'; inTable = true; }
-      const cells = line.split('|').filter((c, i, a) => i > 0 && i < a.length - 1);
-      const isHeader = i === 0 || !lines[i-1]?.trim().startsWith('|');
-      const tag = isHeader ? 'th' : 'td';
-      tableHtml += '<tr>' + cells.map(c => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
+      const cells = line.split('|').filter((c, idx, a) => idx > 0 && idx < a.length - 1);
+      tableHtml += '<tr>' + cells.map(c => `<td>${inline(c.trim())}</td>`).join('') + '</tr>';
       continue;
     } else if (inTable) {
       html += tableHtml + '</table>';
-      tableHtml = '';
-      inTable = false;
+      tableHtml = ''; inTable = false;
     }
 
     // Numbered list
@@ -326,7 +321,7 @@ function formatAnswer(text) {
       continue;
     }
 
-    // Bullet list (* or -)
+    // Bullet list
     if (line.match(/^[\*\-]\s+/)) {
       if (!inList || listType !== 'ul') {
         if (inList) html += `</${listType}>`;
@@ -336,7 +331,7 @@ function formatAnswer(text) {
       continue;
     }
 
-    // Close list if needed
+    // Close list on blank line
     if (inList && line.trim() === '') {
       html += `</${listType}>`;
       inList = false; listType = '';
@@ -347,22 +342,22 @@ function formatAnswer(text) {
     if (line.startsWith('## '))  { html += `<h2>${inline(line.slice(3))}</h2>`; continue; }
     if (line.startsWith('# '))   { html += `<h1>${inline(line.slice(2))}</h1>`; continue; }
 
-    // Empty line = paragraph break
+    // Blank line
     if (line.trim() === '') { html += '<br>'; continue; }
 
-    // Normal line
+    // Normal paragraph line
     html += `<p>${inline(line)}</p>`;
   }
 
-  // Close any open tags
+  // Close any unclosed tags
   if (inTable) html += tableHtml + '</table>';
-  if (inList) html += `</${listType}>`;
+  if (inList)  html += `</${listType}>`;
 
   return html;
 }
 
 function inline(text) {
-  return text
+  return String(text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -372,6 +367,5 @@ function inline(text) {
 }
 
 function showToast(msg) {
-  // Simple alert fallback — can be styled later
   alert(msg);
 }
