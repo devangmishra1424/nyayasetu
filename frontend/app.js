@@ -288,11 +288,62 @@ function escAttr(str) {
 }
 
 function formatAnswer(text) {
-  // Split double newlines into paragraphs, single newlines into line breaks
-  return (text || "")
-    .split(/\n\n+/)
-    .map(para => `<p>${escHtml(para.trim()).replace(/\n/g, "<br>")}</p>`)
-    .join("");
+  if (!text) return "";
+
+  let html = text
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+
+    // Bold and italic
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+
+    // Numbered lists
+    .replace(/^\d+\.\s+(.+)$/gm, '<li class="numbered">$1</li>')
+
+    // Bullet lists
+    .replace(/^[-•]\s+(.+)$/gm, '<li class="bullet">$1</li>')
+
+    // Tables — | col | col |
+    .replace(/\|(.+)\|/g, (match) => {
+      const cells = match.split('|').filter(c => c.trim());
+      return '<tr>' + cells.map(c =>
+        c.trim().match(/^[-]+$/)
+          ? ''
+          : `<td>${c.trim()}</td>`
+      ).join('') + '</tr>';
+    })
+
+    // Inline code
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+
+    // Double newline = paragraph break
+    .replace(/\n\n/g, '</p><p>')
+
+    // Single newline = line break
+    .replace(/\n/g, '<br>');
+
+  // Wrap consecutive <li class="numbered"> in <ol>
+  html = html.replace(
+    /(<li class="numbered">.*?<\/li>)+/gs,
+    (match) => `<ol>${match.replace(/class="numbered"/g, '')}</ol>`
+  );
+
+  // Wrap consecutive <li class="bullet"> in <ul>
+  html = html.replace(
+    /(<li class="bullet">.*?<\/li>)+/gs,
+    (match) => `<ul>${match.replace(/class="bullet"/g, '')}</ul>`
+  );
+
+  // Wrap table rows in <table>
+  html = html.replace(
+    /(<tr>.*?<\/tr>)+/gs,
+    (match) => `<table class="answer-table">${match}</table>`
+  );
+
+  return `<p>${html}</p>`;
 }
 
 function showToast(msg) {

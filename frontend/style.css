@@ -684,3 +684,70 @@ body {
   color: var(--text-3);
   margin-top: 8px;
 }
+
+/* ── Answer formatting ── */
+.bubble-ai ol, .bubble-ai ul {
+  margin: 10px 0 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bubble-ai ol { list-style: decimal; }
+.bubble-ai ul { list-style: disc; }
+
+.bubble-ai li {
+  color: var(--text-1);
+  line-height: 1.6;
+  padding-left: 4px;
+}
+
+.bubble-ai h1, .bubble-ai h2, .bubble-ai h3 {
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--gold);
+  margin: 16px 0 8px;
+}
+
+.bubble-ai h1 { font-size: 20px; }
+.bubble-ai h2 { font-size: 17px; }
+.bubble-ai h3 { font-size: 15px; }
+
+.bubble-ai strong { color: var(--text-1); font-weight: 600; }
+.bubble-ai em { color: var(--text-2); font-style: italic; }
+
+.bubble-ai code {
+  background: var(--navy-4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.answer-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.answer-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.answer-table tr:first-child td {
+  background: var(--navy-3);
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.answer-table tr:hover td { background: var(--navy-3); }
+
+.bubble-ai p {
+  margin-bottom: 10px;
+}
+
+.bubble-ai p:last-child { margin-bottom: 0; }
