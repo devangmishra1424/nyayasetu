@@ -115,7 +115,10 @@ async function submitQuery() {
     const res = await fetch(`${API_BASE}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query })
+      body: JSON.stringify({
+        query,
+        session_id: activeSessionId ? String(activeSessionId) : "default"
+      })
     });
 
     const data = await res.json();
