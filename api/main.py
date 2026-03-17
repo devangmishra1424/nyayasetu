@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def download_models():
-    from src.ner import load_ner_model
-    load_ner_model()
+    
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
         logger.warning("HF_TOKEN not set — skipping model download.")
@@ -56,6 +55,9 @@ def download_models():
         logger.error(f"Model download failed: {e}")
 
 download_models()
+
+from src.ner import load_ner_model
+load_ner_model()
 
 AGENT_VERSION = os.getenv("AGENT_VERSION", "v2")
 
