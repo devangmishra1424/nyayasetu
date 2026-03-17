@@ -358,7 +358,7 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     entities = extract_entities(user_message)
     augmented_message = augment_query(user_message, entities)
 
-   # Pass 2 — build search queries from analysis + legal issues
+    # Pass 2 — build search queries from analysis + legal issues
     search_queries = analysis.get("search_queries", [augmented_message])
     if not search_queries:
         search_queries = [augmented_message]
