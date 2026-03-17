@@ -358,10 +358,20 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     entities = extract_entities(user_message)
     augmented_message = augment_query(user_message, entities)
 
-    # Pass 2
+   # Pass 2 — build search queries from analysis + legal issues
     search_queries = analysis.get("search_queries", [augmented_message])
     if not search_queries:
         search_queries = [augmented_message]
+
+    # Add queries from issue spotter legal_issues
+    for issue in analysis.get("legal_issues", []):
+        statutes = issue.get("relevant_statutes", [])
+        specific = issue.get("specific_issue", "")
+        if specific:
+            issue_query = f"{specific} {' '.join(statutes[:2])}".strip()
+            if issue_query not in search_queries:
+                search_queries.append(issue_query)
+
     if augmented_message not in search_queries:
         search_queries.append(augmented_message)
 
