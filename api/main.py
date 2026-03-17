@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def download_models():
-    
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
         logger.warning("HF_TOKEN not set — skipping model download.")
@@ -30,34 +30,60 @@ def download_models():
     try:
         from huggingface_hub import snapshot_download, hf_hub_download
         repo_id = "CaffeinatedCoding/nyayasetu-models"
+
         if not os.path.exists("models/ner_model"):
             logger.info("Downloading NER model...")
-            snapshot_download(repo_id=repo_id, repo_type="model", allow_patterns="ner_model/*", local_dir="models", token=hf_token)
+            snapshot_download(
+                repo_id=repo_id, repo_type="model",
+                allow_patterns="ner_model/*", local_dir="models", token=hf_token
+            )
             logger.info("NER model downloaded")
         else:
             logger.info("NER model already exists")
+
         if not os.path.exists("models/faiss_index/index.faiss"):
             logger.info("Downloading FAISS index...")
             os.makedirs("models/faiss_index", exist_ok=True)
-            hf_hub_download(repo_id=repo_id, filename="faiss_index/index.faiss", repo_type="model", local_dir="models", token=hf_token)
-            hf_hub_download(repo_id=repo_id, filename="faiss_index/chunk_metadata.jsonl", repo_type="model", local_dir="models", token=hf_token)
+            hf_hub_download(repo_id=repo_id, filename="faiss_index/index.faiss",
+                            repo_type="model", local_dir="models", token=hf_token)
+            hf_hub_download(repo_id=repo_id, filename="faiss_index/chunk_metadata.jsonl",
+                            repo_type="model", local_dir="models", token=hf_token)
             logger.info("FAISS index downloaded")
         else:
             logger.info("FAISS index already exists")
+
         if not os.path.exists("data/parent_judgments.jsonl"):
             logger.info("Downloading parent judgments...")
             os.makedirs("data", exist_ok=True)
-            hf_hub_download(repo_id=repo_id, filename="parent_judgments.jsonl", repo_type="model", local_dir="data", token=hf_token)
+            hf_hub_download(repo_id=repo_id, filename="parent_judgments.jsonl",
+                            repo_type="model", local_dir="data", token=hf_token)
             logger.info("Parent judgments downloaded")
         else:
             logger.info("Parent judgments already exist")
+
+        # Download citation graph artifacts — only if Kaggle run has completed
+        os.makedirs("data", exist_ok=True)
+        for fname in ["citation_graph.json", "reverse_citation_graph.json", "title_to_id.json"]:
+            if not os.path.exists(f"data/{fname}"):
+                logger.info(f"Downloading {fname}...")
+                try:
+                    hf_hub_download(repo_id=repo_id, filename=fname,
+                                    repo_type="model", local_dir="data", token=hf_token)
+                    logger.info(f"{fname} downloaded")
+                except Exception as fe:
+                    logger.warning(f"{fname} not on Hub yet — skipping: {fe}")
+
     except Exception as e:
         logger.error(f"Model download failed: {e}")
+
 
 download_models()
 
 from src.ner import load_ner_model
 load_ner_model()
+
+from src.citation_graph import load_citation_graph
+load_citation_graph()
 
 AGENT_VERSION = os.getenv("AGENT_VERSION", "v2")
 
@@ -77,9 +103,11 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 if os.path.exists("frontend"):
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+
 class QueryRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
+
 
 class QueryResponse(BaseModel):
     query: str
@@ -92,15 +120,18 @@ class QueryResponse(BaseModel):
     truncated: bool
     latency_ms: float
 
+
 @app.get("/")
 def serve_frontend():
     if os.path.exists("frontend/index.html"):
         return FileResponse("frontend/index.html")
     return {"name": "NyayaSetu", "version": "2.0.0", "agent": AGENT_VERSION}
 
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "NyayaSetu", "version": "2.0.0", "agent": AGENT_VERSION}
+
 
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
