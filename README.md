@@ -20,6 +20,8 @@ Ask questions about Indian Supreme Court judgments (1950–2024).
 
 > Retrieval-Augmented Generation over 26,688 Supreme Court of India judgments (1950–2024).  
 > Ask a legal question. Get a cited answer grounded in real case law.
+> 1,025,764 chunks indexed (SC judgments, HC judgments, bare acts, constitution, legal references)
+> V2 agent with 3-pass reasoning loop and conversation memory
 
 [![Live Demo](https://img.shields.io/badge/🤗%20HuggingFace-Live%20Demo-blue)](https://huggingface.co/spaces/CaffeinatedCoding/nyayasetu)
 [![GitHub Actions](https://github.com/devangmishra1424/nyayasetu/actions/workflows/ci.yml/badge.svg)](https://github.com/devangmishra1424/nyayasetu/actions)
