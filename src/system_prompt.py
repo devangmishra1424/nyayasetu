@@ -134,35 +134,6 @@ Tell them what to do TODAY not just eventually.""",
 5. What to watch out for
 Be specific. Cite sections and procedures. Give a real plan.""",
 
-    "strategy_synthesis": """User has triggered a full strategy synthesis.
-Generate a complete structured legal strategy document using ALL facts established across the conversation.
-
-## Legal Strategy Summary
-
-**Your Situation:** [2-3 sentence summary of all established facts from conversation history]
-
-**Strongest Arguments In Your Favour:**
-1. [argument + supporting judgment or statute]
-2. [argument + supporting judgment or statute]
-3. [argument + supporting judgment or statute if applicable]
-
-**Counterarguments You Will Face:**
-1. [counterargument + how to address it specifically]
-2. [counterargument + how to address it specifically]
-
-**Recommended Next Steps:**
-1. [immediate action — do today]
-2. [legal filing if applicable — with realistic timeline]
-3. [evidence to gather — be specific]
-4. [follow-up actions]
-
-**Relevant Statutes and Sections:** [list all applicable acts and specific sections]
-**Approximate Timeline:** [realistic estimate for this type of matter in Indian courts]
-**Weak Points To Address:** [honest assessment of gaps or vulnerabilities in the case]
-
-This is the culmination of everything established in this conversation.
-Pull ALL facts, hypotheses, and evidence from the case state.""",
-
     "explanation": """Explain the legal concept clearly.
 Start with plain language meaning.
 Then apply to this specific situation.
@@ -240,7 +211,7 @@ Output this exact structure:
   "tone": "panicked|analytical|aggressive|casual|defeated",
   "format_requested": "bullets|numbered|table|prose|none",
   "subject": "brief description of main legal subject",
-  "action_needed": "question|reflection|partial_finding|advice|strategy|strategy_synthesis|explanation|observation|reassurance",
+  "action_needed": "question|reflection|partial_finding|advice|strategy|explanation|observation|reassurance",
   "urgency": "immediate|medium|low",
   "hypotheses": [
     {"claim": "legal hypothesis 1", "confidence": "high|medium|low", "evidence": ["evidence supporting this"]},
@@ -256,21 +227,8 @@ Output this exact structure:
     "timeline_events": ["event with approximate time if mentioned"]
   },
   "facts_missing": ["critical fact 1 that would change strategy", "critical fact 2"],
-  "legal_issues": [
-    {
-      "domain": "labour law|criminal law|property law|family law|consumer law|constitutional law|contract law|cyber law|tax law|other",
-      "specific_issue": "brief description of specific issue",
-      "relevant_statutes": ["Act Name Section Number"],
-      "confidence": "high|medium|low"
-    }
-  ],
-  "clarifying_question": {
-    "question": "the single most important question to ask if action_needed is question",
-    "why_needed": "one sentence explanation of why this fact changes the legal strategy",
-    "already_known": ["fact 1 already established", "fact 2 already established"]
-  },
   "stage": "intake|understanding|analysis|strategy|followup",
-  "last_response_type": "question|reflection|partial_finding|advice|strategy|strategy_synthesis|explanation|observation|reassurance|none",
+  "last_response_type": "question|reflection|partial_finding|advice|strategy|explanation|observation|reassurance|none",
   "updated_summary": "3-4 line compressed summary of ENTIRE conversation including this new message. Must capture all key facts, legal issues identified, and current stage.",
   "search_queries": ["specific legal question for FAISS search 1", "specific legal question 2", "specific legal question 3"],
   "should_interpret_context": true,
@@ -285,29 +243,4 @@ Rules:
 - updated_summary must be a complete brief of everything known so far
 - should_interpret_context: true if agent should reflect its understanding back to user (useful every 3-4 turns)
 - format_decision: choose the format that best fits what this specific response needs to communicate
-
-ISSUE SPOTTER — critical rule:
-legal_issues must extract ALL legal domains present in the facts, not just what the user explicitly mentioned.
-Include issues the user may not know exist.
-Example: User says "employer fired me after I reported safety violations" →
-legal_issues should include: wrongful termination (Industrial Disputes Act 1947 Section 2ra), whistleblower protection (Factories Act), potential victimisation claim, and any applicable state labour laws.
-Each identified legal_issue generates an additional specific search query in search_queries.
-Always look for the non-obvious angle — the criminal complaint nobody thought of, the procedural protection that changes everything.
-
-SOCRATIC CLARIFIER — critical rule:
-When action_needed is "question":
-- clarifying_question.question must be exactly ONE question — the single most important missing fact
-- clarifying_question.why_needed must explain in one sentence why this specific fact changes the legal strategy
-- clarifying_question.already_known must list facts already established so the question never repeats known information
-- The question must be surgical: not "tell me more" but "Is this a government or private sector employer?"
-- Never ask what is already captured in updated_summary or facts_extracted
-- The question drives toward the most strategy-changing unknown fact
-
-STRATEGY SYNTHESIS — trigger rule:
-Set action_needed to "strategy_synthesis" when user message contains any of:
-"summarise", "summary", "what should I do", "give me a plan", "next steps",
-"strategy", "what do I do now", "give me advice", "what are my options",
-"final advice", "wrap up", "conclude", "what have we established", "plan of action"
-This triggers generation of the full structured strategy document using ALL accumulated case state.
-
 - Output ONLY the JSON. No explanation. No preamble. No markdown fences."""
