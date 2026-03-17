@@ -17,12 +17,14 @@ import os, sys, json, time, logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, List
 
+# sys.path must be set before any local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.embed import embed_text
 from src.retrieval import retrieve
 from src.verify import verify_citations
 from src.system_prompt import build_prompt, ANALYSIS_PROMPT
+from src.ner import extract_entities, augment_query
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ def empty_case_state() -> Dict:
         "locations": [],
         "timeline": [],
         "disputes": [],
-        "hypotheses": [],        # [{claim, confidence, evidence, status}]
+        "hypotheses": [],
         "stage": "intake",
         "last_response_type": "none",
         "turn_count": 0,
@@ -72,7 +74,6 @@ def update_session(session_id: str, analysis: Dict, user_message: str, response:
     if analysis.get("updated_summary"):
         session["summary"] = analysis["updated_summary"]
 
-    # Update structured fact web
     facts = analysis.get("facts_extracted", {})
     if facts:
         for key in ["parties", "events", "documents", "amounts", "locations", "disputes"]:
@@ -87,7 +88,6 @@ def update_session(session_id: str, analysis: Dict, user_message: str, response:
             if ev and ev not in cs["timeline"]:
                 cs["timeline"].append(ev)
 
-    # Update hypotheses
     for nh in analysis.get("hypotheses", []):
         existing_claims = [h["claim"] for h in cs["hypotheses"]]
         if nh.get("claim") and nh["claim"] not in existing_claims:
@@ -232,7 +232,6 @@ def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict
     system_prompt = build_prompt(analysis)
     cs = session["case_state"]
 
-    # Build context from retrieved chunks
     context_parts = []
     for chunk in chunks[:5]:
         source_type = chunk.get("source_type", "case_law")
@@ -253,7 +252,6 @@ def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict
 
     context = "\n\n".join(context_parts) if context_parts else "No relevant sources retrieved."
 
-    # Build case state block for Pass 3
     case_summary = ""
     if cs.get("parties") or cs.get("hypotheses"):
         hyp_text = "\n".join(
@@ -273,12 +271,18 @@ Active hypotheses:
 Missing facts: {', '.join(cs.get('facts_missing', [])) or 'none critical'}
 Stage: {cs.get('stage', 'intake')}"""
 
-    # Context interpretation instruction
     interpret_instruction = ""
     should_interpret = analysis.get("should_interpret_context", False)
     if should_interpret and not cs.get("context_interpreted"):
         interpret_instruction = """
 CONTEXT REFLECTION: Before your main response, briefly (2-3 lines) reflect your understanding back to the user. Start with "Based on what you've told me..." This builds trust and confirms you've been tracking the situation."""
+
+    radar_instruction = """
+PROACTIVE RADAR — add after your main answer when user has described a real situation:
+Add a brief "⚡ You Should Also Know" section (3-4 lines max).
+Surface 1-2 related legal issues or remedies the user hasn't asked about but which are directly relevant.
+Example: User asked about wrongful termination → proactively mention injunction under Specific Relief Act as faster remedy.
+Skip this section for purely academic questions with no personal situation described."""
 
     summary = session.get("summary", "")
     last_msgs = session.get("last_3_messages", [])
@@ -311,7 +315,8 @@ Instructions:
 - Cite specific sources when making legal claims
 - Use your legal knowledge for reasoning and context
 - Format: {analysis.get('format_decision', 'use the most appropriate format for the content type')}
-- Opposition war-gaming: if giving strategy, include what the other side will argue"""
+- Opposition war-gaming: if giving strategy, include what the other side will argue
+{radar_instruction}"""
 
     response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -349,12 +354,16 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
             "format_decision": "none"
         }
 
+    # Extract entities and augment queries for better retrieval
+    entities = extract_entities(user_message)
+    augmented_message = augment_query(user_message, entities)
+
     # Pass 2
-    search_queries = analysis.get("search_queries", [user_message])
+    search_queries = analysis.get("search_queries", [augmented_message])
     if not search_queries:
-        search_queries = [user_message]
-    if user_message not in search_queries:
-        search_queries.append(user_message)
+        search_queries = [augmented_message]
+    if augmented_message not in search_queries:
+        search_queries.append(augmented_message)
 
     chunks = []
     try:
@@ -379,7 +388,6 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     verification_status, unverified_quotes = verify_citations(answer, chunks)
     update_session(session_id, analysis, user_message, answer)
 
-    # Build sources with real titles
     sources = []
     for c in chunks:
         title = c.get("title", "")
@@ -402,7 +410,7 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
         "sources": sources,
         "verification_status": verification_status,
         "unverified_quotes": unverified_quotes,
-        "entities": {},
+        "entities": entities,
         "num_sources": len(chunks),
         "truncated": False,
         "session_id": session_id,
