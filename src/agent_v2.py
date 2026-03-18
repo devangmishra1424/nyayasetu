@@ -54,8 +54,6 @@ def empty_case_state() -> Dict:
         "turn_count": 0,
         "facts_missing": [],
         "context_interpreted": False,
-        "radar_count": 0,       # track how often radar has fired
-        "last_had_disclaimer": False,
     }
 
 
@@ -161,7 +159,6 @@ NEW USER MESSAGE:
 
 Rules:
 - If last_response_type was "question", action_needed CANNOT be "question"
-- action_needed CANNOT be the same as last_response_type
 - Extract ALL facts from user message even if implied
 - Update hypothesis confidence based on new evidence
 - search_queries must be specific legal questions for vector search"""
@@ -189,29 +186,13 @@ Rules:
             "urgency": "medium",
             "hypotheses": [{"claim": user_message[:80], "confidence": "low", "evidence": []}],
             "facts_extracted": {}, "facts_missing": [],
-            "legal_issues": [],
-            "clarifying_question": {},
+            "legal_issues": [], "clarifying_question": {},
             "stage": "understanding", "last_response_type": last_response_type,
             "updated_summary": f"{summary} | {user_message[:100]}",
             "search_queries": [user_message[:200]],
             "should_interpret_context": False,
             "format_decision": "none"
         }
-
-    # Hard enforce variety at code level
-    if analysis.get("action_needed") == last_response_type and last_response_type != "none":
-        fallback_map = {
-            "question": "partial_finding",
-            "advice": "observation",
-            "reflection": "partial_finding",
-            "partial_finding": "advice",
-            "observation": "advice",
-            "reassurance": "partial_finding",
-            "strategy": "observation",
-            "explanation": "advice",
-        }
-        analysis["action_needed"] = fallback_map.get(last_response_type, "advice")
-        logger.info(f"Variety enforcement: changed action from {last_response_type} to {analysis['action_needed']}")
 
     return analysis
 
@@ -291,29 +272,18 @@ Active hypotheses:
 Missing facts: {', '.join(cs.get('facts_missing', [])) or 'none critical'}
 Stage: {cs.get('stage', 'intake')}"""
 
-    # Context interpretation — only when explicitly flagged, not every turn
     interpret_instruction = ""
     should_interpret = analysis.get("should_interpret_context", False)
     if should_interpret and not cs.get("context_interpreted"):
-        interpret_instruction = "\nBefore your main response, briefly (2 lines max) reflect your understanding back. Start with 'Based on what you've told me...' — only once, never again."
+        interpret_instruction = """
+CONTEXT REFLECTION: Before your main response, briefly (2-3 lines) reflect your understanding back to the user. Start with "Based on what you've told me..." This builds trust and confirms you've been tracking the situation."""
 
-    # Radar — suppress if fired recently
-    radar_count = cs.get("radar_count", 0)
-    turn_count = cs.get("turn_count", 0)
-    show_radar = (turn_count - radar_count) >= 3  # only every 3 turns
-    if show_radar:
-        cs["radar_count"] = turn_count
-        radar_instruction = """
-PROACTIVE RADAR — add ONE brief "⚡ You Should Also Know" line (1-2 sentences only).
-Surface one related legal angle the user hasn't asked about but which is directly relevant.
-Skip if the response is already long or if this is a purely academic question."""
-    else:
-        radar_instruction = ""
-
-    # Disclaimer — suppress on short follow-up turns
-    stage = analysis.get("stage", "understanding")
-    show_disclaimer = stage not in ["understanding", "followup"] and turn_count % 2 == 0
-    disclaimer_instruction = '\nEnd with: "Note: This is not legal advice. Consult a qualified advocate for your specific situation."' if show_disclaimer else ""
+    radar_instruction = """
+PROACTIVE RADAR — add after your main answer when user has described a real situation:
+Add a brief "⚡ You Should Also Know" section (3-4 lines max).
+Surface 1-2 related legal issues or remedies the user hasn't asked about but which are directly relevant.
+Example: User asked about wrongful termination → proactively mention injunction under Specific Relief Act as faster remedy.
+Skip this section for purely academic questions with no personal situation described."""
 
     summary = session.get("summary", "")
     last_msgs = session.get("last_3_messages", [])
@@ -321,16 +291,6 @@ Skip if the response is already long or if this is a purely academic question.""
         f"{m['role'].upper()}: {m['content'][:300]}"
         for m in last_msgs[-4:]
     ) if last_msgs else ""
-
-    action = analysis.get("action_needed", "advice")
-
-    # For question turns — force brevity
-    if action == "question":
-        length_instruction = "\nKEEP THIS RESPONSE TO 3 SENTENCES MAXIMUM. Ask the question. Nothing else."
-    elif stage in ["understanding", "intake"]:
-        length_instruction = "\nKEEP THIS RESPONSE UNDER 150 WORDS."
-    else:
-        length_instruction = ""
 
     user_content = f"""CONVERSATION SUMMARY:
 {summary if summary else "First message."}
@@ -345,21 +305,19 @@ RETRIEVED LEGAL SOURCES:
 USER MESSAGE: {user_message}
 
 THIS TURN:
-- Response type: {action} — execute this type ONLY, do not mix with other types
 - Legal hypotheses: {', '.join(h['claim'] for h in analysis.get('hypotheses', [])[:3]) or 'analysing'}
-- Stage: {stage}
+- Stage: {analysis.get('stage', 'understanding')}
 - Urgency: {analysis.get('urgency', 'medium')}
+- Response type: {analysis.get('action_needed', 'advice')}
 - Format: {analysis.get('format_decision', 'appropriate for content')}
 {interpret_instruction}
-{length_instruction}
 
 Instructions:
-- Execute the response type "{action}" and ONLY that type this turn
-- Cite specific sources only when directly relevant — not in every response
+- Cite specific sources when making legal claims
 - Use your legal knowledge for reasoning and context
-- If giving strategy: include what the other side will argue
-{radar_instruction}
-{disclaimer_instruction}"""
+- Format: {analysis.get('format_decision', 'use the most appropriate format for the content type')}
+- Opposition war-gaming: if giving strategy, include what the other side will argue
+{radar_instruction}"""
 
     response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -367,8 +325,8 @@ Instructions:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
         ],
-        temperature=0.7,    # higher = more varied, less templated
-        max_tokens=800      # shorter responses break the multi-section pattern
+        temperature=0.3,
+        max_tokens=1500
     )
 
     return response.choices[0].message.content
