@@ -5,7 +5,7 @@ V2 agent with conversation memory and 3-pass reasoning.
 Port 7860 for HuggingFace Spaces compatibility.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -15,9 +15,13 @@ import time
 import os
 import sys
 import logging
+import json
+from collections import Counter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+from src.logger import log_inference
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -82,6 +86,9 @@ download_models()
 from src.ner import load_ner_model
 load_ner_model()
 
+from src.reranker import load_reranker
+load_reranker()
+
 from src.citation_graph import load_citation_graph
 load_citation_graph()
 
@@ -119,6 +126,7 @@ class QueryResponse(BaseModel):
     num_sources: int
     truncated: bool
     latency_ms: float
+    session_id: Optional[str] = None
 
 
 @app.get("/")
@@ -134,13 +142,14 @@ def health():
 
 
 @app.post("/query", response_model=QueryResponse)
-def query(request: QueryRequest):
+def query(request: QueryRequest, background_tasks: BackgroundTasks):
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
     if len(request.query) < 10:
         raise HTTPException(status_code=400, detail="Query too short — minimum 10 characters")
     if len(request.query) > 1000:
         raise HTTPException(status_code=400, detail="Query too long — maximum 1000 characters")
+    
     start = time.time()
     try:
         if USE_V2:
@@ -148,8 +157,85 @@ def query(request: QueryRequest):
             result = _run_query(request.query, session_id)
         else:
             result = _run_query_v1(request.query)
+            session_id = "v1"
     except Exception as e:
         logger.error(f"Pipeline error: {e}")
         raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
-    result["latency_ms"] = round((time.time() - start) * 1000, 2)
+    
+    latency_ms = round((time.time() - start) * 1000, 2)
+    result["latency_ms"] = latency_ms
+    result["session_id"] = session_id
+
+    # Log inference as background task — non-blocking
+    background_tasks.add_task(
+        log_inference,
+        query=request.query,
+        session_id=session_id,
+        answer=result.get("answer", ""),
+        num_sources=result.get("num_sources", 0),
+        verification_status=result.get("verification_status", False),
+        entities=result.get("entities", {}),
+        latency_ms=latency_ms,
+        stage=result.get("analysis", {}).get("stage", ""),
+        truncated=result.get("truncated", False),
+        out_of_domain=result.get("num_sources", 0) == 0,
+    )
+
     return result
+
+
+@app.get("/analytics")
+def analytics():
+    """Return aggregated analytics from inference logs."""
+    log_path = os.getenv("LOG_PATH", "logs/inference.jsonl")
+    
+    if not os.path.exists(log_path):
+        return {
+            "total_queries": 0,
+            "verified_ratio": 0,
+            "avg_latency_ms": 0,
+            "out_of_domain_rate": 0,
+            "avg_sources": 0,
+            "stage_distribution": {},
+            "entity_type_frequency": {},
+            "recent_latencies": [],
+        }
+    
+    records = []
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        records.append(json.loads(line))
+                    except Exception:
+                        continue
+    except Exception:
+        return {"error": "Could not read logs"}
+    
+    if not records:
+        return {"total_queries": 0}
+    
+    total = len(records)
+    verified = sum(1 for r in records if r.get("verified", False))
+    out_of_domain = sum(1 for r in records if r.get("out_of_domain", False))
+    latencies = [r.get("latency_ms", 0) for r in records if r.get("latency_ms")]
+    sources = [r.get("num_sources", 0) for r in records]
+    stages = Counter(r.get("stage", "unknown") for r in records)
+    
+    all_entity_types = []
+    for r in records:
+        all_entity_types.extend(r.get("entities_found", []))
+    entity_freq = dict(Counter(all_entity_types).most_common(10))
+    
+    return {
+        "total_queries": total,
+        "verified_ratio": round(verified / total * 100, 1) if total else 0,
+        "avg_latency_ms": round(sum(latencies) / len(latencies), 0) if latencies else 0,
+        "out_of_domain_rate": round(out_of_domain / total * 100, 1) if total else 0,
+        "avg_sources": round(sum(sources) / len(sources), 1) if sources else 0,
+        "stage_distribution": dict(stages),
+        "entity_type_frequency": entity_freq,
+        "recent_latencies": latencies[-20:],
+    }
