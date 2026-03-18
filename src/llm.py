@@ -7,12 +7,13 @@ import os
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ── Gemini setup ──────────────────────────────────────────
-import google.generativeai as genai
 
 _gemini_client = None
 _gemini_model = None
@@ -24,9 +25,9 @@ def _init_gemini():
         logger.warning("GEMINI_API_KEY not set")
         return False
     try:
-        genai.configure(api_key=api_key)
-        _gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-        logger.info("Gemini Flash ready")
+        _gemini_client = genai.Client(api_key=api_key)
+        _gemini_model = True  # marker that client is ready
+        logger.info("Gemini 2.0 Flash ready")
         return True
     except Exception as e:
         logger.error(f"Gemini init failed: {e}")
@@ -67,16 +68,15 @@ Always end with: "Note: This is not legal advice. Consult a qualified advocate."
 
 
 def _call_gemini(messages: list) -> str:
-    """Call Gemini Flash."""
-    # Convert messages to Gemini format
+    """Call Gemini 2.0 Flash."""
     system = next((m["content"] for m in messages if m["role"] == "system"), "")
     user_parts = [m["content"] for m in messages if m["role"] == "user"]
-    
     full_prompt = f"{system}\n\n{chr(10).join(user_parts)}"
     
-    response = _gemini_model.generate_content(
-        full_prompt,
-        generation_config=genai.types.GenerationConfig(
+    response = _gemini_client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=full_prompt,
+        config=types.GenerateContentConfig(
             temperature=0.3,
             max_output_tokens=1500,
         )

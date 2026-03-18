@@ -5,7 +5,7 @@ huggingface_hub
 sentence-transformers
 numpy
 groq
-google-generativeai
+google-genai
 tenacity
 python-dotenv
 transformers
