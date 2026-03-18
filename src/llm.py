@@ -43,7 +43,14 @@ def _init_groq():
         return False
     try:
         from groq import Groq
-        _groq_client = Groq(api_key=api_key)
+        import httpx
+        _groq_client = Groq(
+            api_key=api_key,
+            http_client=httpx.Client(
+                verify=False,
+                timeout=30.0
+            )
+        )
         logger.info("Groq ready as fallback")
         return True
     except Exception as e:
