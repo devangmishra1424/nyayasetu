@@ -378,6 +378,12 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     chunks = []
     try:
         chunks = retrieve_parallel(search_queries[:3], top_k=5)
+        # Add precedent chain
+        from src.citation_graph import get_precedent_chain
+        retrieved_ids = [c.get("judgment_id", "") for c in chunks]
+        precedents = get_precedent_chain(retrieved_ids, max_precedents=2)
+        if precedents:
+            chunks.extend(precedents)
     except Exception as e:
         logger.error(f"Pass 2 failed: {e}")
 
