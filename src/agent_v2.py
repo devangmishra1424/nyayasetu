@@ -384,7 +384,13 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
 
     chunks = []
     try:
-        chunks = retrieve_parallel(search_queries[:3], top_k=5)
+        # Retrieve more candidates for reranker to work with
+        raw_chunks = retrieve_parallel(search_queries[:3], top_k=10)
+        
+        # Rerank candidates by true relevance
+        from src.reranker import rerank
+        chunks = rerank(user_message, raw_chunks, top_k=5)
+        
         # Add precedent chain
         from src.citation_graph import get_precedent_chain
         retrieved_ids = [c.get("judgment_id", "") for c in chunks]
