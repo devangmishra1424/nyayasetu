@@ -8,12 +8,16 @@ WHY one call per query? Multi-step chains add latency and failure points.
 
 import os
 from groq import Groq
+import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 from dotenv import load_dotenv
 
 load_dotenv()
 
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+_client = Groq(
+    api_key=os.getenv("GROQ_API_KEY"),
+    http_client=httpx.Client(verify=False, timeout=30.0)
+)
 
 
 def call_llm_raw(messages: list) -> str:
