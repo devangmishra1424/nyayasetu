@@ -27,7 +27,7 @@ def _init_gemini():
     try:
         _gemini_client = genai.Client(api_key=api_key)
         _gemini_model = True  # marker that client is ready
-        logger.info("Gemini 2.0 Flash ready")
+        logger.info("Gemini 1.5 Flash ready")
         return True
     except Exception as e:
         logger.error(f"Gemini init failed: {e}")
@@ -75,13 +75,13 @@ Always end with: "Note: This is not legal advice. Consult a qualified advocate."
 
 
 def _call_gemini(messages: list) -> str:
-    """Call Gemini 2.0 Flash."""
+    """Call Gemini 1.5 Flash."""
     system = next((m["content"] for m in messages if m["role"] == "system"), "")
     user_parts = [m["content"] for m in messages if m["role"] == "user"]
     full_prompt = f"{system}\n\n{chr(10).join(user_parts)}"
     
     response = _gemini_client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-1.5-flash",
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
