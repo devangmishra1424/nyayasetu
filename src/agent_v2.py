@@ -25,15 +25,14 @@ from src.retrieval import retrieve
 from src.verify import verify_citations
 from src.system_prompt import build_prompt, ANALYSIS_PROMPT
 from src.ner import extract_entities, augment_query
+from src.llm import call_llm_raw
 
 logger = logging.getLogger(__name__)
 
-from groq import Groq
 from tenacity import retry, stop_after_attempt, wait_exponential
 from dotenv import load_dotenv
 
 load_dotenv()
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ── Session store ─────────────────────────────────────────
 sessions: Dict[str, Dict] = {}
@@ -165,17 +164,10 @@ Rules:
 - Update hypothesis confidence based on new evidence
 - search_queries must be specific legal questions for vector search"""
 
-    response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": ANALYSIS_PROMPT},
-            {"role": "user", "content": user_content}
-        ],
-        temperature=0.1,
-        max_tokens=900
-    )
-
-    raw = response.choices[0].message.content.strip()
+    raw = call_llm_raw([
+        {"role": "system", "content": ANALYSIS_PROMPT},
+        {"role": "user", "content": user_content}
+    ]).strip()
     raw = raw.replace("```json", "").replace("```", "").strip()
 
     try:
@@ -326,17 +318,10 @@ Instructions:
 - Opposition war-gaming: if giving strategy, include what the other side will argue
 {radar_instruction}"""
 
-    response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content}
-        ],
-        temperature=0.3,
-        max_tokens=1500
-    )
-
-    return response.choices[0].message.content
+    return call_llm_raw([
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content}
+    ])
 
 
 # ── Main entry point ──────────────────────────────────────

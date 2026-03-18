@@ -1,67 +1,136 @@
 """
-LLM module. Single Groq API call with tenacity retry.
-
-WHY Groq? Free tier, fastest inference (~500 tokens/sec).
-WHY temperature=0.1? Lower = more deterministic, less hallucination.
-WHY one call per query? Multi-step chains add latency and failure points.
-Gemini is configured as backup if Groq fails permanently.
+LLM module. Gemini Flash as primary, Groq as fallback.
+Gemini works reliably from HF Spaces. Groq is backup.
 """
 
 import os
-from groq import Groq
+import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# ── Gemini setup ──────────────────────────────────────────
+import google.generativeai as genai
 
-SYSTEM_PROMPT = """You are NyayaSetu, an Indian legal research assistant.
+_gemini_client = None
+_gemini_model = None
 
-Rules you must follow:
-1. Answer ONLY using the provided Supreme Court judgment excerpts
-2. Never use outside knowledge
-3. Quote directly from excerpts when making factual claims — use double quotes
-4. Always cite the Judgment ID when referencing a case
-5. If excerpts don't contain enough information, say so explicitly
-6. End every response with: "NOTE: This is not legal advice. Consult a qualified advocate."
+def _init_gemini():
+    global _gemini_client, _gemini_model
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not set")
+        return False
+    try:
+        genai.configure(api_key=api_key)
+        _gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+        logger.info("Gemini Flash ready")
+        return True
+    except Exception as e:
+        logger.error(f"Gemini init failed: {e}")
+        return False
 
-Formatting rules — follow these exactly:
-- Use numbered lists (1. 2. 3.) when listing multiple points or steps
-- Use bullet points (- item) for sub-points or supporting details
-- Use markdown tables (| Col | Col |) when comparing options side by side
-- Use **bold** for important terms, case names, and section numbers
-- Use headers (## Heading) to separate major sections in long answers
-- Never write everything as one long paragraph
-- Each distinct point must be on its own line
-- Always put a blank line between sections
+# ── Groq setup ────────────────────────────────────────────
+_groq_client = None
+
+def _init_groq():
+    global _groq_client
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return False
+    try:
+        from groq import Groq
+        _groq_client = Groq(api_key=api_key)
+        logger.info("Groq ready as fallback")
+        return True
+    except Exception as e:
+        logger.error(f"Groq init failed: {e}")
+        return False
+
+_gemini_ready = _init_gemini()
+_groq_ready = _init_groq()
+
+SYSTEM_PROMPT = """You are NyayaSetu — a sharp, street-smart Indian legal advisor.
+You work FOR the user. Your job is to find the angle, identify the leverage,
+and tell the user exactly what to do — the way a senior lawyer would in a
+private consultation, not the way a textbook would explain it.
+
+Be direct. Be human. Vary your response style naturally.
+Sometimes short and punchy. Sometimes detailed and structured.
+Match the energy of what the user needs right now.
+
+When citing sources, reference the Judgment ID naturally in your response.
+Always end with: "Note: This is not legal advice. Consult a qualified advocate."
 """
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=8)
-)
-def call_llm(query: str, context: str) -> str:
-    """
-    Call Groq Llama-3. Retries 3 times with exponential backoff.
-    Raises LLMError after all retries fail — caller handles this.
-    """
-    user_message = f"""QUESTION: {query}
 
-SUPREME COURT JUDGMENT EXCERPTS:
-{context}
+def _call_gemini(messages: list) -> str:
+    """Call Gemini Flash."""
+    # Convert messages to Gemini format
+    system = next((m["content"] for m in messages if m["role"] == "system"), "")
+    user_parts = [m["content"] for m in messages if m["role"] == "user"]
+    
+    full_prompt = f"{system}\n\n{chr(10).join(user_parts)}"
+    
+    response = _gemini_model.generate_content(
+        full_prompt,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.3,
+            max_output_tokens=1500,
+        )
+    )
+    return response.text
 
-Answer based only on the excerpts above. Cite judgment IDs.
-Use proper markdown formatting — numbered lists, bullet points, tables, bold text as appropriate."""
 
-    response = _client.chat.completions.create(
+def _call_groq(messages: list) -> str:
+    """Call Groq Llama as fallback."""
+    response = _groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message}
-        ],
-        temperature=0.1,
+        messages=messages,
+        temperature=0.3,
         max_tokens=1500
     )
-
     return response.choices[0].message.content
+
+
+@retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=4))
+def call_llm(query: str, context: str) -> str:
+    """
+    Call LLM with Gemini primary, Groq fallback.
+    Used by V1 agent (src/agent.py).
+    """
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"QUESTION: {query}\n\nSOURCES:\n{context}\n\nAnswer based on sources. Cite judgment IDs."}
+    ]
+    return _call_llm_with_fallback(messages)
+
+
+def call_llm_raw(messages: list) -> str:
+    """
+    Call LLM with pre-built messages list.
+    Used by V2 agent (src/agent_v2.py) for Pass 1 and Pass 3.
+    """
+    return _call_llm_with_fallback(messages)
+
+
+def _call_llm_with_fallback(messages: list) -> str:
+    """Try Gemini first, fall back to Groq."""
+    
+    # Try Gemini first
+    if _gemini_ready and _gemini_model:
+        try:
+            return _call_gemini(messages)
+        except Exception as e:
+            logger.warning(f"Gemini failed: {e}, trying Groq")
+    
+    # Fall back to Groq
+    if _groq_ready and _groq_client:
+        try:
+            return _call_groq(messages)
+        except Exception as e:
+            logger.error(f"Groq also failed: {e}")
+    
+    raise Exception("All LLM providers failed")

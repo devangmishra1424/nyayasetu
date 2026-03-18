@@ -352,7 +352,22 @@ NyayaSetu/
 │   └── test_api.py
 ├── .github/workflows/ci.yml  ← pytest → lint → docker build → HF deploy → smoke test
 └── docker/Dockerfile
+
+
 ```
+
+## V2 Agent Architecture
+
+**Pass 1 — Analyse:** LLM call to understand the message, detect tone/stage, 
+build structured fact web, update hypotheses, form targeted FAISS queries.
+
+**Pass 2 — Retrieve:** Parallel FAISS search across 3 queries. No LLM call. ~5ms.
+
+**Pass 3 — Respond:** Dynamically assembled prompt based on tone, stage, and 
+format needs + full case state + retrieved context.
+
+**Conversation Memory:** Each session maintains a compressed summary + structured 
+fact web (parties, events, documents, amounts, hypotheses) updated every turn.
 
 ---
 
