@@ -67,30 +67,12 @@ def _extract_quotes(text: str) -> list:
 
 
 def _get_embedder():
-    """Get the already-loaded embedder — no double loading."""
+    """Get the already-loaded MiniLM embedder."""
     try:
-        from src.retrieval import _embedder as embedder
-        return embedder
-    except ImportError:
-        pass
-
-    try:
-        from src.embed import _model as embedder
-        return embedder
-    except ImportError:
-        pass
-
-    try:
-        # Last resort — import from retrieval module globals
-        import src.retrieval as retrieval_module
-        if hasattr(retrieval_module, '_embedder'):
-            return retrieval_module._embedder
-        if hasattr(retrieval_module, 'embedder'):
-            return retrieval_module.embedder
+        from src.embed import _model
+        return _model
     except Exception:
-        pass
-
-    return None
+        return None
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
