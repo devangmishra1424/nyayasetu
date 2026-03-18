@@ -54,6 +54,7 @@ def empty_case_state() -> Dict:
         "turn_count": 0,
         "facts_missing": [],
         "context_interpreted": False,
+        "last_radar_turn": -3,   # track when radar last fired
     }
 
 
@@ -159,6 +160,7 @@ NEW USER MESSAGE:
 
 Rules:
 - If last_response_type was "question", action_needed CANNOT be "question"
+- action_needed SHOULD differ from last_response_type for variety
 - Extract ALL facts from user message even if implied
 - Update hypothesis confidence based on new evidence
 - search_queries must be specific legal questions for vector search"""
@@ -232,6 +234,7 @@ def retrieve_parallel(search_queries: List[str], top_k: int = 5) -> List[Dict]:
 def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict) -> str:
     system_prompt = build_prompt(analysis)
     cs = session["case_state"]
+    turn_count = cs.get("turn_count", 0)
 
     context_parts = []
     for chunk in chunks[:5]:
@@ -262,7 +265,7 @@ def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict
         ) or "  none established"
 
         case_summary = f"""
-CASE STATE (built across {cs.get('turn_count', 0)} turns):
+CASE STATE (built across {turn_count} turns):
 Parties: {', '.join(cs.get('parties', [])) or 'unspecified'}
 Events: {', '.join(cs.get('events', [])) or 'unspecified'}
 Evidence: {', '.join(cs.get('documents', [])) or 'none mentioned'}
@@ -272,18 +275,22 @@ Active hypotheses:
 Missing facts: {', '.join(cs.get('facts_missing', [])) or 'none critical'}
 Stage: {cs.get('stage', 'intake')}"""
 
+    # Context interpretation — only once per conversation at turn 2
     interpret_instruction = ""
     should_interpret = analysis.get("should_interpret_context", False)
-    if should_interpret and not cs.get("context_interpreted"):
-        interpret_instruction = """
-CONTEXT REFLECTION: Before your main response, briefly (2-3 lines) reflect your understanding back to the user. Start with "Based on what you've told me..." This builds trust and confirms you've been tracking the situation."""
+    if should_interpret and not cs.get("context_interpreted") and turn_count == 2:
+        interpret_instruction = "\nIn one sentence only, reflect back your understanding of the situation before responding."
 
-    radar_instruction = """
-PROACTIVE RADAR — add after your main answer when user has described a real situation:
-Add a brief "⚡ You Should Also Know" section (3-4 lines max).
-Surface 1-2 related legal issues or remedies the user hasn't asked about but which are directly relevant.
-Example: User asked about wrongful termination → proactively mention injunction under Specific Relief Act as faster remedy.
-Skip this section for purely academic questions with no personal situation described."""
+    # Radar — only fires every 3 turns, not every turn
+    last_radar_turn = cs.get("last_radar_turn", -3)
+    if (turn_count - last_radar_turn) >= 3:
+        cs["last_radar_turn"] = turn_count
+        radar_instruction = """
+PROACTIVE RADAR — only if a genuinely non-obvious legal angle exists that hasn't been mentioned yet:
+Add a single "⚡ You Should Also Know:" line (1-2 sentences max).
+Skip entirely if the response already covers all relevant angles or if this is a question/understanding turn."""
+    else:
+        radar_instruction = "Do NOT add a 'You Should Also Know' section this turn."
 
     summary = session.get("summary", "")
     last_msgs = session.get("last_3_messages", [])
