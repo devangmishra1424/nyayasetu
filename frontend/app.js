@@ -372,3 +372,107 @@ function inline(text) {
 function showToast(msg) {
   alert(msg);
 }
+
+// ── Analytics ────────────────────────────────────────────────────────
+async function showAnalytics() {
+  showScreen("analytics");
+  document.getElementById("topbar-title").textContent = "System Analytics";
+  await loadAnalytics();
+}
+
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`${API_BASE}/analytics`);
+    const data = await res.json();
+
+    if (data.total_queries === 0) {
+      document.getElementById("stat-total").textContent = "0";
+      document.getElementById("stat-verified").textContent = "—";
+      document.getElementById("stat-latency").textContent = "—";
+      document.getElementById("stat-ood").textContent = "—";
+      document.getElementById("stat-sources").textContent = "—";
+      document.getElementById("chart-stages").innerHTML = "<p class='no-data'>No queries yet. Start asking questions.</p>";
+      document.getElementById("chart-entities").innerHTML = "<p class='no-data'>No entity data yet.</p>";
+      document.getElementById("chart-latency").innerHTML = "<p class='no-data'>No latency data yet.</p>";
+      return;
+    }
+
+    // Stat cards
+    document.getElementById("stat-total").textContent = data.total_queries;
+    document.getElementById("stat-verified").textContent = data.verified_ratio + "%";
+    document.getElementById("stat-latency").textContent = data.avg_latency_ms + "ms";
+    document.getElementById("stat-ood").textContent = data.out_of_domain_rate + "%";
+    document.getElementById("stat-sources").textContent = data.avg_sources;
+
+    // Stage distribution bar chart
+    renderBarChart("chart-stages", data.stage_distribution);
+
+    // Entity frequency bar chart
+    renderBarChart("chart-entities", data.entity_type_frequency);
+
+    // Latency sparkline
+    renderSparkline("chart-latency", data.recent_latencies);
+
+  } catch (err) {
+    document.getElementById("chart-stages").innerHTML = "<p class='no-data'>Could not load analytics.</p>";
+  }
+}
+
+function renderBarChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!data || Object.keys(data).length === 0) {
+    container.innerHTML = "<p class='no-data'>No data yet.</p>";
+    return;
+  }
+
+  const max = Math.max(...Object.values(data));
+  const html = Object.entries(data)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value]) => `
+      <div class="bar-row">
+        <span class="bar-label">${escHtml(label)}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: ${Math.round(value / max * 100)}%"></div>
+        </div>
+        <span class="bar-value">${value}</span>
+      </div>
+    `).join("");
+
+  container.innerHTML = `<div class="bar-chart">${html}</div>`;
+}
+
+function renderSparkline(containerId, latencies) {
+  const container = document.getElementById(containerId);
+  if (!latencies || latencies.length === 0) {
+    container.innerHTML = "<p class='no-data'>No data yet.</p>";
+    return;
+  }
+
+  const max = Math.max(...latencies);
+  const min = Math.min(...latencies);
+  const range = max - min || 1;
+  const height = 60;
+  const width = 300;
+  const step = width / (latencies.length - 1 || 1);
+
+  const points = latencies.map((v, i) => {
+    const x = i * step;
+    const y = height - ((v - min) / range) * height;
+    return `${x},${y}`;
+  }).join(" ");
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="sparkline">
+      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    </svg>
+    <div class="sparkline-range">
+      <span>${Math.round(min)}ms min</span>
+      <span>${Math.round(max)}ms max</span>
+    </div>
+  `;
+}
+
+function escHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}

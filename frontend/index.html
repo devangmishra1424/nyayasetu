@@ -27,6 +27,11 @@
       New Research Session
     </button>
 
+    <button class="analytics-btn" onclick="showAnalytics()">
+      <span class="analytics-icon">📊</span>
+      System Analytics
+    </button>
+
     <div class="sidebar-section-label">SESSIONS</div>
     <div id="sessions-list" class="sessions-list">
       <div class="sessions-empty">No sessions yet</div>
@@ -84,6 +89,59 @@
     <div id="screen-chat" class="screen screen-chat">
       <div id="messages-container" class="messages-container">
         <div id="messages-list" class="messages-list"></div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS SCREEN ── -->
+    <div id="screen-analytics" class="screen screen-analytics">
+      <div class="analytics-inner">
+        <div class="analytics-header">
+          <h2>System Analytics</h2>
+          <p>Live metrics from inference logs</p>
+        </div>
+        
+        <div class="analytics-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Queries</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-verified">—</div>
+            <div class="stat-label">Verified Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-latency">—</div>
+            <div class="stat-label">Avg Latency</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-ood">—</div>
+            <div class="stat-label">Out-of-Domain Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-sources">—</div>
+            <div class="stat-label">Avg Sources / Query</div>
+          </div>
+        </div>
+
+        <div class="analytics-charts">
+          <div class="chart-card">
+            <h3>Stage Distribution</h3>
+            <div id="chart-stages" class="chart-container"></div>
+          </div>
+          <div class="chart-card">
+            <h3>Entity Types Extracted</h3>
+            <div id="chart-entities" class="chart-container"></div>
+          </div>
+          <div class="chart-card">
+            <h3>Recent Query Latencies (ms)</h3>
+            <div id="chart-latency" class="chart-container"></div>
+          </div>
+        </div>
+
+        <div class="analytics-footer">
+          <button class="refresh-btn" onclick="loadAnalytics()">↻ Refresh</button>
+          <span class="analytics-note">Data from current session logs. Resets on container restart.</span>
+        </div>
       </div>
     </div>
 
