@@ -5,7 +5,7 @@ faiss-cpu
 fastapi
 uvicorn
 python-dotenv
-openai
+groq
 dvc
 mlflow
 optuna
