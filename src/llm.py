@@ -1,12 +1,12 @@
 """
 LLM module. HuggingFace Inference API as primary.
 Works natively from HF Spaces — same infrastructure.
-Groq as local dev fallback.
+OpenRouter and Groq as fallback providers.
 
 WHY HF Inference API?
 HF Spaces can always reach HuggingFace's own APIs.
 No network routing issues. Uses existing HF_TOKEN.
-Same Llama 3.3 70B model as Groq.
+Same Llama 3.3 70B model as others.
 """
 
 import os
@@ -22,6 +22,10 @@ _hf_client = None
 
 # ── OpenRouter (free tier, reliable fallback) ──────────────
 _openrouter_client = None
+
+# ── Groq fallback (works locally, may be blocked on HF Spaces) ──
+_groq_client = None
+
 
 def _init_hf():
     global _hf_client
@@ -41,6 +45,7 @@ def _init_hf():
         logger.error(f"HF Inference API init failed: {e}")
         return False
 
+
 def _init_openrouter():
     global _openrouter_client
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -58,9 +63,6 @@ def _init_openrouter():
         logger.error(f"OpenRouter init failed: {e}")
         return False
 
-# ── Groq fallback (works locally, may be blocked on HF Spaces) ──
-_openrouter_ready = _init_openrouter()
-_groq_client = None
 
 def _init_groq():
     global _groq_client
@@ -76,13 +78,14 @@ def _init_groq():
         logger.error(f"Groq init failed: {e}")
         return False
 
+
 _hf_ready = _init_hf()
+_openrouter_ready = _init_openrouter()
 _groq_ready = _init_groq()
 
 
 def _call_hf(messages: list) -> str:
     """Call HuggingFace Inference API."""
-    # Convert to HF format
     response = _hf_client.chat_completion(
         messages=messages,
         max_tokens=1500,
@@ -90,7 +93,8 @@ def _call_hf(messages: list) -> str:
     )
     return response.choices[0].message.content
 
-openrouter(messages: list) -> str:
+
+def _call_openrouter(messages: list) -> str:
     """Call OpenRouter free tier."""
     response = _openrouter_client.chat.completions.create(
         model="meta-llama/llama-3.3-70b-instruct:free",
@@ -101,9 +105,19 @@ openrouter(messages: list) -> str:
     return response.choices[0].message.content
 
 
-def _call_
 def _call_groq(messages: list) -> str:
-    """Call Groq as fthen OpenRouter, then Groq."""
+    """Call Groq as fallback."""
+    response = _groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages,
+        temperature=0.3,
+        max_tokens=1500
+    )
+    return response.choices[0].message.content
+
+
+def _call_with_fallback(messages: list) -> str:
+    """Try HF first, then OpenRouter, then Groq."""
     if _hf_ready and _hf_client:
         try:
             return _call_hf(messages)
@@ -114,18 +128,7 @@ def _call_groq(messages: list) -> str:
         try:
             return _call_openrouter(messages)
         except Exception as e:
-            logger.warning(f"OpenRouter
-    )
-    return response.choices[0].message.content
-
-
-def _call_with_fallback(messages: list) -> str:
-    """Try HF first, fall back to Groq."""
-    if _hf_ready and _hf_client:
-        try:
-            return _call_hf(messages)
-        except Exception as e:
-            logger.warning(f"HF Inference failed: {e}, trying Groq")
+            logger.warning(f"OpenRouter failed: {e}, trying Groq")
 
     if _groq_ready and _groq_client:
         try:
