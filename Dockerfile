@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Updated: install ca-certificates so the container can properly verify HTTPS (fixes Groq connection error)
+# Permanent fix for Groq SSL/connection error
 RUN apt-get update && \
     apt-get install -y git curl ca-certificates && \
     update-ca-certificates && \

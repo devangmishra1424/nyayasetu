@@ -16,7 +16,7 @@ load_dotenv()
 
 _client = Groq(
     api_key=os.getenv("GROQ_API_KEY"),
-    http_client=httpx.Client(verify=False, timeout=30.0)
+    http_client=httpx.Client(timeout=30.0)
 )
 
 
