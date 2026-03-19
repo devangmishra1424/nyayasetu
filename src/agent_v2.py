@@ -28,15 +28,13 @@ from src.ner import extract_entities, augment_query
 
 logger = logging.getLogger(__name__)
 
-from groq import Groq, APIConnectionError, RateLimitError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from dotenv import load_dotenv
 import threading
 import time
+from src.llm import call_llm_raw
 
 load_dotenv()
-# Initialize Groq client with 60s timeout for API calls
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=60.0)
 
 # ── Circuit Breaker for Groq API ──────────────────────────
 class CircuitBreaker:
@@ -217,17 +215,14 @@ Rules:
 - Update hypothesis confidence based on new evidence
 - search_queries must be specific legal questions for vector search"""
 
-    response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = call_llm_raw(
         messages=[
             {"role": "system", "content": ANALYSIS_PROMPT},
             {"role": "user", "content": user_content}
-        ],
-        temperature=0.1,
-        max_tokens=900
+        ]
     )
     _circuit_breaker.record_success()  # API call succeeded
-    raw = response.choices[0].message.content.strip()
+    raw = response.strip()
     raw = raw.replace("```json", "").replace("```", "").strip()
 
     try:
@@ -383,17 +378,14 @@ Instructions:
 - Opposition war-gaming: if giving strategy, include what the other side will argue
 {radar_instruction}"""
 
-    response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = call_llm_raw(
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
-        ],
-        temperature=0.3,
-        max_tokens=1500
+        ]
     )
     _circuit_breaker.record_success()  # API call succeeded
-    return response.choices[0].message.content
+    return response
 
 
 # ── Main entry point ──────────────────────────────────────
