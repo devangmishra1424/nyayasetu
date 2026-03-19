@@ -28,13 +28,59 @@ from src.ner import extract_entities, augment_query
 
 logger = logging.getLogger(__name__)
 
-from groq import Groq
+from groq import Groq, APIConnectionError, RateLimitError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from dotenv import load_dotenv
+import threading
+import time
 
 load_dotenv()
 # Initialize Groq client with 60s timeout for API calls
 _client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=60.0)
+
+# ── Circuit Breaker for Groq API ──────────────────────────
+class CircuitBreaker:
+    """Simple circuit breaker to detect when Groq API is down."""
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = None
+        self.is_open = False
+        self.lock = threading.Lock()
+    
+    def record_success(self):
+        with self.lock:
+            self.failure_count = 0
+            self.is_open = False
+    
+    def record_failure(self):
+        with self.lock:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+            if self.failure_count >= self.failure_threshold:
+                self.is_open = True
+                logger.warning(f"Circuit breaker OPEN: {self.failure_count} failures detected")
+    
+    def can_attempt(self) -> bool:
+        with self.lock:
+            if not self.is_open:
+                return True
+            # Try to recover after timeout
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                logger.info("Circuit breaker attempting recovery...")
+                self.is_open = False
+                self.failure_count = 0
+                return True
+            return False
+    
+    def get_status(self) -> str:
+        with self.lock:
+            if self.is_open:
+                return f"OPEN ({self.failure_count} failures)"
+            return f"CLOSED ({self.failure_count} failures)"
+
+_circuit_breaker = CircuitBreaker()
 
 # ── Session store ─────────────────────────────────────────
 sessions: Dict[str, Dict] = {}
@@ -120,6 +166,10 @@ def update_session(session_id: str, analysis: Dict, user_message: str, response:
 # Retry up to 5 times with exponential backoff (1s to 16s) to handle transient failures
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=1, max=16, multiplier=1.5))
 def analyse(user_message: str, session: Dict) -> Dict:
+    if not _circuit_breaker.can_attempt():
+        logger.error(f"Circuit breaker OPEN - skipping Pass 1. Status: {_circuit_breaker.get_status()}")
+        raise Exception("Groq API circuit breaker is open - service unavailable")
+    
     summary = session.get("summary", "")
     last_msgs = session.get("last_3_messages", [])
     cs = session["case_state"]
@@ -176,6 +226,7 @@ Rules:
         temperature=0.1,
         max_tokens=900
     )
+    _circuit_breaker.record_success()  # API call succeeded
     raw = response.choices[0].message.content.strip()
     raw = raw.replace("```json", "").replace("```", "").strip()
 
@@ -234,6 +285,10 @@ def retrieve_parallel(search_queries: List[str], top_k: int = 5) -> List[Dict]:
 # Retry up to 5 times with exponential backoff (2s to 32s) — more aggressive than Pass 1
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=2, max=32, multiplier=1.5))
 def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict) -> str:
+    if not _circuit_breaker.can_attempt():
+        logger.error(f"Circuit breaker OPEN - skipping Pass 3. Status: {_circuit_breaker.get_status()}")
+        raise Exception("Groq API circuit breaker is open - service unavailable")
+    
     system_prompt = build_prompt(analysis)
     cs = session["case_state"]
     turn_count = cs.get("turn_count", 0)
@@ -337,6 +392,7 @@ Instructions:
         temperature=0.3,
         max_tokens=1500
     )
+    _circuit_breaker.record_success()  # API call succeeded
     return response.choices[0].message.content
 
 
@@ -349,7 +405,11 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     try:
         analysis = analyse(user_message, session)
     except Exception as e:
-        logger.error(f"Pass 1 failed after retries: {type(e).__name__}: {e}")
+        error_type = type(e).__name__
+        logger.error(f"Pass 1 failed after retries: {error_type}: {e}. Circuit breaker: {_circuit_breaker.get_status()}")
+        # Record API failure if it was a connection error
+        if "APIConnectionError" in error_type or "RateLimitError" in error_type:
+            _circuit_breaker.record_failure()
         analysis = {
             "tone": "casual", "format_requested": "none",
             "subject": "legal query", "action_needed": "advice",
@@ -407,7 +467,11 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     try:
         answer = respond(user_message, analysis, chunks, session)
     except Exception as e:
-        logger.error(f"Pass 3 failed after retries: {type(e).__name__}: {e}")
+        error_type = type(e).__name__
+        logger.error(f"Pass 3 failed after retries: {error_type}: {e}. Circuit breaker: {_circuit_breaker.get_status()}")
+        # Record API failure if it was a connection error
+        if "APIConnectionError" in error_type or "RateLimitError" in error_type:
+            _circuit_breaker.record_failure()
         if chunks:
             fallback = "\n\n".join(
                 f"[{c.get('title', 'Source')}]\n{c.get('text', '')[:400]}"

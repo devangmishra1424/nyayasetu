@@ -152,7 +152,14 @@ def serve_frontend():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "NyayaSetu", "version": "2.0.0", "agent": AGENT_VERSION}
+    from src.agent_v2 import _circuit_breaker
+    return {
+        "status": "ok",
+        "service": "NyayaSetu",
+        "version": "2.0.0",
+        "agent": AGENT_VERSION,
+        "groq_circuit_breaker": _circuit_breaker.get_status()
+    }
 
 
 @app.post("/query", response_model=QueryResponse)
