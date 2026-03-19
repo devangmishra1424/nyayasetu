@@ -97,8 +97,14 @@ def download_models():
 
 download_models()
 
-from src.ner import load_ner_model
-load_ner_model()
+# NER is optional enhancement — skip on HF Spaces to save memory
+# The app works fine without NER; it just doesn't extract entities
+SPACE_ID = os.getenv("SPACE_ID", "")  # HF Spaces sets this
+if SPACE_ID:
+    logger.info("Running on HF Spaces — skipping NER to save memory")
+else:
+    from src.ner import load_ner_model
+    load_ner_model()
 
 from src.reranker import load_reranker
 load_reranker()
