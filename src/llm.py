@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 # ── HuggingFace Inference API ─────────────────────────────
 _hf_client = None
 
+# ── OpenRouter (free tier, reliable fallback) ──────────────
+_openrouter_client = None
+
 def _init_hf():
     global _hf_client
     token = os.getenv("HF_TOKEN")
@@ -38,7 +41,25 @@ def _init_hf():
         logger.error(f"HF Inference API init failed: {e}")
         return False
 
+def _init_openrouter():
+    global _openrouter_client
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        return False
+    try:
+        from openai import OpenAI
+        _openrouter_client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+        logger.info("OpenRouter ready as fallback")
+        return True
+    except Exception as e:
+        logger.error(f"OpenRouter init failed: {e}")
+        return False
+
 # ── Groq fallback (works locally, may be blocked on HF Spaces) ──
+_openrouter_ready = _init_openrouter()
 _groq_client = None
 
 def _init_groq():
@@ -69,14 +90,31 @@ def _call_hf(messages: list) -> str:
     )
     return response.choices[0].message.content
 
-
-def _call_groq(messages: list) -> str:
-    """Call Groq as fallback."""
-    response = _groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+openrouter(messages: list) -> str:
+    """Call OpenRouter free tier."""
+    response = _openrouter_client.chat.completions.create(
+        model="meta-llama/llama-3.3-70b-instruct:free",
         messages=messages,
+        max_tokens=1500,
         temperature=0.3,
-        max_tokens=1500
+    )
+    return response.choices[0].message.content
+
+
+def _call_
+def _call_groq(messages: list) -> str:
+    """Call Groq as fthen OpenRouter, then Groq."""
+    if _hf_ready and _hf_client:
+        try:
+            return _call_hf(messages)
+        except Exception as e:
+            logger.warning(f"HF Inference failed: {e}, trying OpenRouter")
+
+    if _openrouter_ready and _openrouter_client:
+        try:
+            return _call_openrouter(messages)
+        except Exception as e:
+            logger.warning(f"OpenRouter
     )
     return response.choices[0].message.content
 
