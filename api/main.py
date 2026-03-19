@@ -37,10 +37,20 @@ def download_models():
 
         if not os.path.exists("models/ner_model"):
             logger.info("Downloading NER model...")
-            snapshot_download(
-                repo_id=repo_id, repo_type="model",
-                allow_patterns="ner_model/*", local_dir="models", token=hf_token
-            )
+            os.makedirs("models/ner_model", exist_ok=True)
+            # NER model files — explicit downloads to avoid snapshot_download pattern bugs
+            ner_files = [
+                "config.json", "model.safetensors", "tokenizer.json", 
+                "tokenizer_config.json", "training_args.bin", "training_results.json"
+            ]
+            for fname in ner_files:
+                try:
+                    hf_hub_download(
+                        repo_id=repo_id, filename=f"ner_model/{fname}",
+                        repo_type="model", local_dir="models", token=hf_token
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not download ner_model/{fname}: {e}")
             logger.info("NER model downloaded")
         else:
             logger.info("NER model already exists")
@@ -48,10 +58,14 @@ def download_models():
         if not os.path.exists("models/faiss_index/index.faiss"):
             logger.info("Downloading FAISS index...")
             os.makedirs("models/faiss_index", exist_ok=True)
-            hf_hub_download(repo_id=repo_id, filename="faiss_index/index.faiss",
-                            repo_type="model", local_dir="models", token=hf_token)
-            hf_hub_download(repo_id=repo_id, filename="faiss_index/chunk_metadata.jsonl",
-                            repo_type="model", local_dir="models", token=hf_token)
+            # Download FAISS files explicitly to avoid snapshot_download pattern issues
+            faiss_files = ["index.faiss", "chunk_metadata.jsonl"]
+            for fname in faiss_files:
+                try:
+                    hf_hub_download(repo_id=repo_id, filename=f"faiss_index/{fname}",
+                                    repo_type="model", local_dir="models", token=hf_token)
+                except Exception as fe:
+                    logger.warning(f"Could not download faiss_index/{fname}: {fe}")
             logger.info("FAISS index downloaded")
         else:
             logger.info("FAISS index already exists")

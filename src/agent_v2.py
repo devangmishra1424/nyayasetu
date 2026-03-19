@@ -29,11 +29,12 @@ from src.ner import extract_entities, augment_query
 logger = logging.getLogger(__name__)
 
 from groq import Groq
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from dotenv import load_dotenv
 
 load_dotenv()
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Initialize Groq client with 60s timeout for API calls
+_client = Groq(api_key=os.getenv("GROQ_API_KEY"), timeout=60.0)
 
 # ── Session store ─────────────────────────────────────────
 sessions: Dict[str, Dict] = {}
@@ -116,7 +117,8 @@ def update_session(session_id: str, analysis: Dict, user_message: str, response:
 
 
 # ── Pass 1: Analyse ───────────────────────────────────────
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=4))
+# Retry up to 5 times with exponential backoff (1s to 16s) to handle transient failures
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(min=1, max=16, multiplier=1.5))
 def analyse(user_message: str, session: Dict) -> Dict:
     summary = session.get("summary", "")
     last_msgs = session.get("last_3_messages", [])
@@ -229,7 +231,8 @@ def retrieve_parallel(search_queries: List[str], top_k: int = 5) -> List[Dict]:
 
 
 # ── Pass 3: Respond ───────────────────────────────────────
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=8))
+# Retry up to 5 times with exponential backoff (2s to 32s) — more aggressive than Pass 1
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(min=2, max=32, multiplier=1.5))
 def respond(user_message: str, analysis: Dict, chunks: List[Dict], session: Dict) -> str:
     system_prompt = build_prompt(analysis)
     cs = session["case_state"]
@@ -346,7 +349,7 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     try:
         analysis = analyse(user_message, session)
     except Exception as e:
-        logger.error(f"Pass 1 failed: {e}")
+        logger.error(f"Pass 1 failed after retries: {type(e).__name__}: {e}")
         analysis = {
             "tone": "casual", "format_requested": "none",
             "subject": "legal query", "action_needed": "advice",
@@ -404,7 +407,7 @@ def run_query_v2(user_message: str, session_id: str) -> Dict[str, Any]:
     try:
         answer = respond(user_message, analysis, chunks, session)
     except Exception as e:
-        logger.error(f"Pass 3 failed: {e}")
+        logger.error(f"Pass 3 failed after retries: {type(e).__name__}: {e}")
         if chunks:
             fallback = "\n\n".join(
                 f"[{c.get('title', 'Source')}]\n{c.get('text', '')[:400]}"
