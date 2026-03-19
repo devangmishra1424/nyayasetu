@@ -28,12 +28,15 @@ from src.ner import extract_entities, augment_query
 
 logger = logging.getLogger(__name__)
 
-from groq import Groq
+from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 from dotenv import load_dotenv
 
 load_dotenv()
-_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+_client = OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com/v1"
+)
 
 # ── Session store ─────────────────────────────────────────
 sessions: Dict[str, Dict] = {}
@@ -166,7 +169,7 @@ Rules:
 - search_queries must be specific legal questions for vector search"""
 
     response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="deepseek-chat",
         messages=[
             {"role": "system", "content": ANALYSIS_PROMPT},
             {"role": "user", "content": user_content}
@@ -326,7 +329,7 @@ Instructions:
 {radar_instruction}"""
 
     response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="deepseek-chat",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
