@@ -22,7 +22,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # ── Similarity threshold ──────────────────────────────────
-SIMILARITY_THRESHOLD = 0.55  # cosine similarity — tunable
+SIMILARITY_THRESHOLD = 0.45  # cosine similarity — tunable
 
 
 def _normalise(text: str) -> str:
@@ -34,35 +34,15 @@ def _normalise(text: str) -> str:
 
 
 def _extract_quotes(text: str) -> list:
-    """Extract quoted phrases and key sentences from answer."""
+    """Extract only explicitly quoted phrases from answer."""
     quotes = []
-
-    # Extract explicitly quoted phrases
     patterns = [
-        r'"([^"]{15,})"',
-        r'\u201c([^\u201d]{15,})\u201d',
+        r'"([^"]{20,})"',
+        r'\u201c([^\u201d]{20,})\u201d',
     ]
     for pattern in patterns:
         found = re.findall(pattern, text)
         quotes.extend(found)
-
-    # If no explicit quotes, extract key sentences for verification
-    if not quotes:
-        sentences = re.split(r'(?<=[.!?])\s+', text)
-        # Take sentences that make specific legal claims
-        for s in sentences:
-            s = s.strip()
-            # Sentences with section numbers, case citations, or specific claims
-            if (len(s) > 40 and
-                any(indicator in s.lower() for indicator in [
-                    "section", "act ", "ipc", "crpc",
-                    "article ", "judgment", "punishable",
-                    "imprisonment", "years rigorous"
-                ])):
-                quotes.append(s)
-                if len(quotes) >= 3:  # cap at 3 sentences
-                    break
-
     return quotes
 
 

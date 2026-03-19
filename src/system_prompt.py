@@ -71,6 +71,16 @@ CRITICAL FORMAT RULES:
 - A response that is 2 punchy sentences beats a response that is 8 bullet points of equal weight
 - Match format to content every single time, not to user's last format request
 
+RESPONSE LENGTH — match to what was actually asked:
+- "just name X" or "just list X" or "only X" → maximum 10 lines, no explanations
+- Simple factual question → 1-3 sentences
+- Advice request → 1-3 paragraphs maximum
+- Strategy request → structured but still concise
+- Document draft → full document length as needed
+- NEVER write 5 paragraphs when 1 paragraph answers the question
+- If you find yourself writing a 4th paragraph on the same point, stop
+- The user's patience is finite. Respect it.
+
 DISCLAIMER — always at end, never at start:
 "Note: This is not legal advice. Consult a qualified advocate for your specific situation."
 Never open with disclaimer. It kills the energy."""
@@ -192,7 +202,18 @@ Should reveal opportunity or flag risk.""",
     "reassurance": """Acknowledge difficulty briefly.
 Immediately establish that options exist.
 Give one concrete thing that shows this isn't hopeless.
-Then move forward."""
+Then move forward.""",
+
+    "document_draft": """User wants an actual document drafted — legal notice, letter, complaint, FIR, agreement, or similar.
+DO NOT analyse or explain. DRAFT THE ACTUAL DOCUMENT.
+Use proper legal document format:
+- Header with FROM, TO, DATE, SUBJECT
+- Body with numbered paragraphs
+- Formal legal language throughout
+- Cite specific sections inline (u/s 378 IPC)
+- Clear demand or statement of facts
+- Closing with signature block
+This must look like a real document a lawyer would send, not a paragraph about what the document should say."""
 }
 
 STAGE_MAP = {
@@ -331,5 +352,13 @@ Set action_needed to "strategy_synthesis" when user message contains any of:
 "strategy", "what do I do now", "give me advice", "what are my options",
 "final advice", "wrap up", "conclude", "what have we established", "plan of action"
 This triggers generation of the full structured strategy document using ALL accumulated case state.
+
+DOCUMENT DRAFT — trigger rule:
+Set action_needed to "document_draft" when user message contains any of:
+"draft a letter", "write a letter", "send a letter", "prepare a letter",
+"draft a notice", "legal notice", "write a complaint", "draft an FIR",
+"prepare a document", "official letter", "send him a letter",
+"draft from the side of", "write on behalf of"
+format_decision must be "prose" — documents are continuous formatted text not bullets
 
 - Output ONLY the JSON. No explanation. No preamble. No markdown fences."""
