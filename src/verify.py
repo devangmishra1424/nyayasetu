@@ -22,7 +22,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # ── Similarity threshold ──────────────────────────────────
-SIMILARITY_THRESHOLD = 0.72  # cosine similarity — tunable
+SIMILARITY_THRESHOLD = 0.55  # cosine similarity — tunable
 
 
 def _normalise(text: str) -> str:
@@ -55,9 +55,9 @@ def _extract_quotes(text: str) -> list:
             # Sentences with section numbers, case citations, or specific claims
             if (len(s) > 40 and
                 any(indicator in s.lower() for indicator in [
-                    "section", "act", "ipc", "crpc", "court held",
-                    "judgment", "article", "rule", "according to",
-                    "as per", "under", "punishable", "imprisonment"
+                    "section", "act ", "ipc", "crpc",
+                    "article ", "judgment", "punishable",
+                    "imprisonment", "years rigorous"
                 ])):
                 quotes.append(s)
                 if len(quotes) >= 3:  # cap at 3 sentences

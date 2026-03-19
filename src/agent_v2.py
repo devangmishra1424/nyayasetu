@@ -100,6 +100,8 @@ def empty_case_state() -> Dict:
         "facts_missing": [],
         "context_interpreted": False,
         "last_radar_turn": -3,   # track when radar last fired
+        "last_format": "none",
+        "format_override_turn": -1,  # track when user explicitly requested a format
     }
 
 
@@ -149,6 +151,7 @@ def update_session(session_id: str, analysis: Dict, user_message: str, response:
     cs["stage"] = analysis.get("stage", cs["stage"])
     cs["last_response_type"] = analysis.get("action_needed", "none")
     cs["facts_missing"] = analysis.get("facts_missing", [])
+    cs["last_format"] = analysis.get("format_decision", "none")
     cs["turn_count"] = cs.get("turn_count", 0) + 1
 
     if cs["turn_count"] >= 3:
@@ -213,7 +216,10 @@ Rules:
 - action_needed SHOULD differ from last_response_type for variety
 - Extract ALL facts from user message even if implied
 - Update hypothesis confidence based on new evidence
-- search_queries must be specific legal questions for vector search"""
+- search_queries must be specific legal questions for vector search
+- format_decision must be chosen fresh each turn based on THIS message's content
+- NEVER carry over format_decision from previous turn unless user explicitly requests it again
+- If user requested a specific format last turn, revert to most natural format this turn"""
 
     response = call_llm_raw(
         messages=[
