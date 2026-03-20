@@ -23,7 +23,7 @@
   --transition:  0.2s ease;
 }
 
-html, body { height: 100%; overflow: hidden; }
+html { height: 100%; }
 
 body {
   font-family: 'DM Sans', sans-serif;
@@ -31,13 +31,16 @@ body {
   color: var(--text-1);
   font-size: 14px;
   line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ── Layout ── */
 .app-layout {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: visible;
 }
 
 /* ── Sidebar ── */
@@ -809,6 +812,95 @@ body {
 .stat-value {
   font-size: 28px;
   font-weight: 600;
+}
+
+/* ── Responsive Improvements ── */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: 208px;
+    --topbar-h: 48px;
+  }
+
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    height: auto;
+    max-height: 40vh;
+    overflow-y: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .main-wrapper {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .topbar-title {
+    font-size: 14px;
+    max-width: 60%;
+  }
+
+  .screen {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .screen-welcome {
+    padding: 20px 16px 60px !important;
+  }
+
+  .welcome-inner {
+    max-width: 100% !important;
+  }
+
+  .chat-bubble {
+    max-width: 95% !important;
+  }
+
+  .msg-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sessions-list {
+    max-height: 200px;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .topbar-title {
+    font-size: 12px;
+  }
+
+  .status-pill {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .screen-welcome {
+    padding: 16px 12px 40px !important;
+  }
+
+  .welcome-inner h1 {
+    font-size: 20px !important;
+    line-height: 1.3;
+  }
+
+  .chat-container {
+    max-height: 300px;
+  }
+}
   color: var(--text-1);
   font-family: 'Cormorant Garamond', serif;
 }
