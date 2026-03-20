@@ -32,10 +32,14 @@ const state = {
 // ════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadRecentSessions();
+  console.log('✓ NyayaSetu Moot Court UI loaded');
+  try { loadRecentSessions(); } catch (e) { console.warn('Could not load sessions:', e); }
   updateLobbyTime();
   setInterval(updateLobbyTime, 1000);
-  document.getElementById('argument-input').addEventListener('input', updateWordCount);
+  const argInput = document.getElementById('argument-input');
+  if (argInput) {
+    argInput.addEventListener('input', updateWordCount);
+  }
 });
 
 // ════════════════════════════════════════════════════════════
@@ -43,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ════════════════════════════════════════════════════════════
 
 function showScreen(screenId) {
+  console.log(`🔄 Navigating to screen: ${screenId}`);
   // Hide all screens
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   
@@ -51,10 +56,11 @@ function showScreen(screenId) {
   if (targetScreen) {
     targetScreen.classList.add('active');
     state.currentScreen = screenId;
+    console.log(`✓ Screen active: ${screenId}`);
     
     // Screen-specific initialization
     if (screenId === 'lobby') {
-      loadRecentSessions();
+      try { loadRecentSessions(); } catch (e) { console.warn('Error loading sessions:', e); }
     } else if (screenId === 'courtroom') {
       initializeCourtroom();
     } else if (screenId === 'analysis') {
@@ -62,6 +68,8 @@ function showScreen(screenId) {
     } else if (screenId === 'sessions') {
       loadAllSessions();
     }
+  } else {
+    console.error(`✗ Screen not found: screen-${screenId}`);
   }
 }
 
@@ -110,17 +118,22 @@ function removeIssue(issue) {
 }
 
 function goToStep(step) {
+  console.log(`→ Moving to setup step ${step}`);
+  
   // Validate current step
   if (state.setupStep === 1 && !state.setupData.side) {
     alert('Please select your side');
+    console.warn('Cannot advance: side not selected');
     return;
   }
   if (state.setupStep === 2) {
-    if (!document.getElementById('case-title').value.trim()) {
+    const title = document.getElementById('case-title').value.trim();
+    if (!title) {
       alert('Please enter case title');
+      console.warn('Cannot advance: case title missing');
       return;
     }
-    state.setupData.title = document.getElementById('case-title').value;
+    state.setupData.title = title;
     state.setupData.userClient = document.getElementById('user-client').value;
     state.setupData.opposingParty = document.getElementById('opposing-party').value;
     state.setupData.facts = document.getElementById('brief-facts').value;
@@ -130,7 +143,13 @@ function goToStep(step) {
   // Update steps
   state.setupStep = step;
   document.querySelectorAll('.setup-step').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`setup-step-${step}`).classList.remove('hidden');
+  const stepEl = document.getElementById(`setup-step-${step}`);
+  if (stepEl) {
+    stepEl.classList.remove('hidden');
+    console.log(`✓ Setup step ${step} displayed`);
+  } else {
+    console.error(`✗ Setup step ${step} element not found`);
+  }
 
   // Update indicators
   document.querySelectorAll('.step-indicator').forEach((ind, i) => {
