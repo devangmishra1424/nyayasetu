@@ -19,6 +19,7 @@ This module owns the 3-LLM-calls-per-round budget.
 
 import logging
 import json
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from src.court.session import (
@@ -117,16 +118,20 @@ def process_user_argument(
     phase = session["phase"]
     
     # Route to appropriate handler
-    if phase == "briefing":
-        return _handle_briefing(session_id, user_argument, session)
-    elif phase == "rounds":
-        return _handle_round(session_id, user_argument, session)
-    elif phase == "cross_examination":
-        return _handle_cross_exam_answer(session_id, user_argument, session)
-    elif phase == "closing":
-        return _handle_closing(session_id, user_argument, session)
-    else:
-        return {"error": f"Cannot process argument in phase: {phase}"}
+    try:
+        if phase == "briefing":
+            return _handle_briefing(session_id, user_argument, session)
+        elif phase == "rounds":
+            return _handle_round(session_id, user_argument, session)
+        elif phase == "cross_examination":
+            return _handle_cross_exam_answer(session_id, user_argument, session)
+        elif phase == "closing":
+            return _handle_closing(session_id, user_argument, session)
+        else:
+            return {"error": f"Cannot process argument in phase: {phase}"}
+    except Exception as e:
+        logger.error(f"process_user_argument failed in phase {phase}: {e}", exc_info=True)
+        return {"error": str(e)}
 
 
 def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict:
@@ -680,7 +685,7 @@ Generate the complete document."""
         "type": doc_type,
         "for_side": for_side,
         "content": document_text,
-        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "round": session.get("current_round", 0),
     }
     

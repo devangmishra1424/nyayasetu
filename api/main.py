@@ -414,12 +414,18 @@ def court_argue(request: ArgueRequest):
     if not request.session_id or not request.argument.strip():
         raise HTTPException(status_code=400, detail="Session ID and argument required")
     
-    result = process_user_argument(request.session_id, request.argument)
-    
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    
-    return result
+    try:
+        result = process_user_argument(request.session_id, request.argument)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Court argue endpoint error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/court/object")
@@ -444,16 +450,22 @@ def court_document(request: DocumentRequest):
     """Generate and produce a legal document."""
     from src.court.orchestrator import process_document_request
     
-    result = process_document_request(
-        request.session_id,
-        request.doc_type,
-        request.for_side,
-    )
-    
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    
-    return result
+    try:
+        result = process_document_request(
+            request.session_id,
+            request.doc_type,
+            request.for_side,
+        )
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Court document endpoint error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/court/end")
