@@ -176,6 +176,14 @@ def health():
     }
 
 
+@app.get("/court/ui")
+def serve_moot_court():
+    """Serve the Moot Court UI directly"""
+    if os.path.exists("frontend/court/court.html"):
+        return FileResponse("frontend/court/court.html", media_type="text/html")
+    return {"error": "Moot Court UI not found"}
+
+
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest, background_tasks: BackgroundTasks):
     if not request.query.strip():
