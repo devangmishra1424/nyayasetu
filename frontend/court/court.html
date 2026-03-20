@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NyayaSetu — Moot Court</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/court/court.css"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#153328",
+            "primary-container": "#2c4a3e",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#98b9a9",
+            "secondary": "#795900",
+            "secondary-container": "#fed174",
+            "on-secondary": "#ffffff",
+            "on-secondary-container": "#785800",
+            "tertiary": "#342554",
+            "tertiary-container": "#4b3b6c",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "background": "#fef9f1",
+            "surface": "#fef9f1",
+            "surface-bright": "#fef9f1",
+            "surface-dim": "#ded9d2",
+            "surface-variant": "#e7e2da",
+            "surface-container": "#f2ede5",
+            "surface-container-low": "#f8f3eb",
+            "surface-container-high": "#ece8e0",
+            "surface-container-highest": "#e7e2da",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#1d1c17",
+            "on-surface-variant": "#414845",
+            "outline": "#727974",
+            "outline-variant": "#c1c8c3",
+            "inverse-surface": "#32302b",
+            "inverse-on-surface": "#f5f0e8",
+            "secondary-fixed": "#ffdfa0",
+            "secondary-fixed-dim": "#ecc165",
+            "tertiary-fixed": "#eaddff",
+            "tertiary-fixed-dim": "#d1bdf7",
+            "on-tertiary-fixed": "#221141",
+          },
+          fontFamily: {
+            "serif": ["Cormorant Garamond", "serif"],
+            "sans": ["DM Sans", "sans-serif"],
+            "headline": ["Newsreader", "serif"],
+            "body": ["Plus Jakarta Sans", "sans-serif"],
+            "mono": ["JetBrains Mono", "monospace"],
+          },
+          borderRadius: {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px",
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-[#F5F0E8] text-on-surface font-body min-h-screen overflow-hidden">
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: LOBBY                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen active">
+  <!-- Watercolor bg -->
+  <div class="watercolor-bg"></div>
+
+  <!-- Nav -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#F5F0E8]/90 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <nav class="flex justify-between items-center w-full px-12 py-4 max-w-[1920px] mx-auto">
+      <div class="flex items-center gap-8">
+        <a href="/static/index.html" class="font-serif text-2xl font-bold text-primary italic">NyayaSetu</a>
+        <div class="hidden md:flex gap-8 items-center">
+          <a href="/static/index.html" class="font-serif font-bold text-lg text-primary/70 hover:text-primary transition-colors">Research</a>
+          <span class="font-serif font-bold text-lg text-secondary border-b-2 border-secondary pb-1">Moot Court</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-mono text-xs text-primary/40 bg-surface-container px-3 py-1 rounded-full">Educational Simulation Only</span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="relative z-10 pt-32 pb-20 px-12 grid grid-cols-12 gap-12 max-w-7xl mx-auto items-center min-h-screen">
+    <!-- Centre card -->
+    <div class="col-span-12 lg:col-span-7 flex justify-center items-center">
+      <div class="clay-card p-12 lg:p-16 rounded-xl w-full max-w-2xl text-center">
+        <!-- Gavel icon -->
+        <div class="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-full bg-surface-container clay-puffy">
+          <span class="material-symbols-outlined text-secondary text-4xl" style="font-variation-settings:'FILL' 1">gavel</span>
+        </div>
+        <h1 class="font-serif text-5xl lg:text-6xl font-bold text-primary tracking-tight mb-4">NYAYASETU MOOT COURT</h1>
+        <p class="font-sans text-lg text-primary/60 mb-12 uppercase tracking-widest">Practice. Argue. Prepare.</p>
+
+        <div class="flex flex-col sm:flex-row gap-6 justify-center mb-10">
+          <button onclick="showScreen('setup')" class="clay-btn-primary flex items-center justify-center gap-3 px-8 py-5 rounded-xl font-sans font-bold text-lg text-white">
+            <span class="material-symbols-outlined">scale</span>
+            Start New Case
+          </button>
+          <button onclick="showImportFlow()" class="clay-btn-secondary flex items-center justify-center gap-3 border-2 border-secondary/30 px-8 py-5 rounded-xl font-sans font-bold text-lg text-secondary">
+            <span class="material-symbols-outlined">folder_open</span>
+            Continue Research Session
+          </button>
+        </div>
+        <a onclick="showScreen('sessions')" class="text-secondary font-sans font-bold text-base hover:underline flex items-center justify-center gap-2 mb-12 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">list_alt</span>
+          View Past Sessions
+        </a>
+        <div class="pt-8 border-t border-primary/5">
+          <p class="text-primary/40 text-sm font-sans italic">For educational simulation only. Not legal advice.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent sessions sidebar -->
+    <div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+      <div class="flex items-center justify-between px-4">
+        <h3 class="font-serif text-2xl font-bold text-primary">Recent Sessions</h3>
+        <span class="text-xs font-mono text-secondary bg-secondary-fixed/30 px-2 py-1 rounded">LIVE</span>
+      </div>
+      <div id="recent-sessions-list" class="space-y-4">
+        <div class="clay-card p-6 rounded-xl text-center text-primary/40 text-sm font-sans">
+          Loading sessions...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Registrar clock -->
+  <div class="fixed bottom-12 right-12 z-50">
+    <div class="clay-card bg-white/80 backdrop-blur-xl p-4 rounded-xl">
+      <div class="flex items-center gap-4">
+        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div class="flex flex-col">
+          <span class="font-mono text-[10px] text-primary/40 leading-none">REGISTRAR CLOCK</span>
+          <span id="lobby-clock" class="font-sans font-bold text-primary">--:--:--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: CASE SETUP                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#F5F0E8]/90 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <nav class="flex justify-between items-center px-12 py-4">
+      <span class="font-serif text-2xl font-bold text-primary italic">NyayaSetu Moot Court</span>
+      <button onclick="showScreen('lobby')" class="text-primary/60 hover:text-primary font-sans text-sm flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">arrow_back</span> Back to Lobby
+      </button>
+    </nav>
+  </header>
+
+  <main class="pt-28 pb-16 px-12 max-w-4xl mx-auto">
+    <div class="mb-10">
+      <h1 class="font-serif text-4xl font-bold text-primary mb-2">Case Setup</h1>
+      <p class="text-primary/60 font-sans">Configure your moot court session before entering the courtroom.</p>
+    </div>
+
+    <!-- Step indicators -->
+    <div class="flex items-center gap-4 mb-10">
+      <div id="step-1-ind" class="step-indicator active">
+        <span class="step-num">1</span>
+        <span class="font-sans text-sm font-medium">Your Side</span>
+      </div>
+      <div class="h-px flex-1 bg-outline-variant"></div>
+      <div id="step-2-ind" class="step-indicator">
+        <span class="step-num">2</span>
+        <span class="font-sans text-sm font-medium">The Case</span>
+      </div>
+      <div class="h-px flex-1 bg-outline-variant"></div>
+      <div id="step-3-ind" class="step-indicator">
+        <span class="step-num">3</span>
+        <span class="font-sans text-sm font-medium">Courtroom Setup</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Your Side -->
+    <div id="setup-step-1" class="setup-step">
+      <h2 class="font-serif text-2xl font-bold text-primary mb-8">Who are you representing?</h2>
+      <div class="grid grid-cols-2 gap-6 mb-10">
+        <div id="side-petitioner" onclick="selectSide('petitioner')" class="side-card clay-card p-8 rounded-xl cursor-pointer text-center">
+          <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-blue-600 text-3xl">person</span>
+          </div>
+          <h3 class="font-serif text-xl font-bold text-primary mb-2">Petitioner</h3>
+          <p class="text-primary/60 font-sans text-sm">You argue FOR the case. You brought this matter before the court.</p>
+        </div>
+        <div id="side-respondent" onclick="selectSide('respondent')" class="side-card clay-card p-8 rounded-xl cursor-pointer text-center">
+          <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-red-600 text-3xl">shield</span>
+          </div>
+          <h3 class="font-serif text-xl font-bold text-primary mb-2">Respondent</h3>
+          <p class="text-primary/60 font-sans text-sm">You argue AGAINST the case. You are defending against the petition.</p>
+        </div>
+      </div>
+      <button onclick="goToStep(2)" class="clay-btn-primary px-8 py-4 rounded-xl font-sans font-bold text-white">Continue →</button>
+    </div>
+
+    <!-- Step 2: The Case -->
+    <div id="setup-step-2" class="setup-step hidden">
+      <h2 class="font-serif text-2xl font-bold text-primary mb-8">Define the Case</h2>
+      <div class="space-y-6">
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-2">Case Title</label>
+          <input id="case-title" type="text" placeholder="e.g. State of Maharashtra vs Ramesh Kumar" class="clay-input w-full px-5 py-4 rounded-xl font-sans"/>
+        </div>
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="font-serif text-lg font-semibold text-primary block mb-2">Your Client</label>
+            <input id="user-client" type="text" placeholder="Client name" class="clay-input w-full px-5 py-4 rounded-xl font-sans"/>
+          </div>
+          <div>
+            <label class="font-serif text-lg font-semibold text-primary block mb-2">Opposing Party</label>
+            <input id="opposing-party" type="text" placeholder="Opposing party name" class="clay-input w-full px-5 py-4 rounded-xl font-sans"/>
+          </div>
+        </div>
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-2">Legal Issues</label>
+          <div id="issues-list" class="flex flex-wrap gap-2 mb-3"></div>
+          <div class="flex gap-3">
+            <input id="issue-input" type="text" placeholder="Add a legal issue and press Enter" class="clay-input flex-1 px-5 py-3 rounded-xl font-sans text-sm"/>
+            <button onclick="addIssue()" class="clay-btn-secondary px-4 py-3 rounded-xl font-sans font-bold text-secondary">Add</button>
+          </div>
+        </div>
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-2">Brief Facts</label>
+          <textarea id="brief-facts" rows="4" placeholder="Briefly describe the facts of the case..." class="clay-input w-full px-5 py-4 rounded-xl font-sans resize-none"></textarea>
+        </div>
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-2">Jurisdiction</label>
+          <select id="jurisdiction" class="clay-input w-full px-5 py-4 rounded-xl font-sans">
+            <option value="supreme_court">Supreme Court of India</option>
+            <option value="high_court">High Court</option>
+            <option value="district_court">District Court</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-4 mt-8">
+        <button onclick="goToStep(1)" class="clay-btn-ghost px-8 py-4 rounded-xl font-sans font-bold">← Back</button>
+        <button onclick="goToStep(3)" class="clay-btn-primary px-8 py-4 rounded-xl font-sans font-bold text-white">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Courtroom Setup -->
+    <div id="setup-step-3" class="setup-step hidden">
+      <h2 class="font-serif text-2xl font-bold text-primary mb-8">Courtroom Configuration</h2>
+      <div class="space-y-8">
+        <!-- Bench -->
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-4">Bench Composition</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="option-card" id="bench-single" onclick="selectOption('bench','single')">
+              <span class="font-sans font-medium">Single Judge</span>
+            </div>
+            <div class="option-card selected" id="bench-division" onclick="selectOption('bench','division')">
+              <span class="font-sans font-medium">Division Bench</span>
+            </div>
+            <div class="option-card" id="bench-constitutional" onclick="selectOption('bench','constitutional')">
+              <span class="font-sans font-medium">Constitutional Bench</span>
+            </div>
+          </div>
+        </div>
+        <!-- Difficulty -->
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-4">Difficulty</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="option-card" id="diff-moot" onclick="selectOption('diff','moot')">
+              <span class="font-sans font-medium">Moot (Guided)</span>
+            </div>
+            <div class="option-card selected" id="diff-standard" onclick="selectOption('diff','standard')">
+              <span class="font-sans font-medium">Standard</span>
+            </div>
+            <div class="option-card" id="diff-adversarial" onclick="selectOption('diff','adversarial')">
+              <span class="font-sans font-medium">Adversarial</span>
+              <span class="text-xs text-error ml-1">(No mercy)</span>
+            </div>
+          </div>
+        </div>
+        <!-- Session Length -->
+        <div>
+          <label class="font-serif text-lg font-semibold text-primary block mb-4">Session Length</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="option-card" id="len-brief" onclick="selectOption('len','brief')">
+              <span class="font-sans font-medium">Brief</span>
+              <span class="text-xs text-primary/50 block">3 rounds</span>
+            </div>
+            <div class="option-card selected" id="len-standard" onclick="selectOption('len','standard')">
+              <span class="font-sans font-medium">Standard</span>
+              <span class="text-xs text-primary/50 block">5 rounds</span>
+            </div>
+            <div class="option-card" id="len-extended" onclick="selectOption('len','extended')">
+              <span class="font-sans font-medium">Extended</span>
+              <span class="text-xs text-primary/50 block">8 rounds</span>
+            </div>
+          </div>
+        </div>
+        <!-- Trap warnings toggle -->
+        <div class="flex items-center justify-between clay-card p-5 rounded-xl">
+          <div>
+            <h4 class="font-sans font-bold text-primary">Enable Trap Detection Warnings</h4>
+            <p class="text-sm text-primary/60">Show a warning when opposing counsel may be setting a trap</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="trap-warnings" checked/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="flex gap-4 mt-10">
+        <button onclick="goToStep(2)" class="clay-btn-ghost px-8 py-4 rounded-xl font-sans font-bold">← Back</button>
+        <button onclick="enterCourtroom()" class="clay-btn-primary px-10 py-5 rounded-xl font-sans font-bold text-white text-lg flex items-center gap-3">
+          <span class="material-symbols-outlined">balance</span>
+          Enter the Courtroom
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: COURTROOM (Main)                                   -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-courtroom" class="screen">
+  <!-- Top nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-[#F5F0E8]/90 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <div class="flex justify-between items-center px-12 py-4">
+      <div class="flex items-center gap-4">
+        <span class="font-serif text-xl font-bold text-primary italic">NyayaSetu</span>
+        <span class="text-primary/30">|</span>
+        <span id="court-case-title" class="font-sans text-sm text-primary/70 truncate max-w-xs">Moot Court</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div id="round-indicator" class="px-4 py-2 bg-surface-container rounded-xl flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary text-sm">timer</span>
+          <span class="font-mono text-primary text-sm font-bold">Round 1</span>
+        </div>
+        <div id="phase-badge" class="px-3 py-1 bg-primary text-white rounded-full font-mono text-xs">BRIEFING</div>
+        <button onclick="confirmEndSession()" class="px-4 py-2 rounded-xl border border-error/30 text-error text-sm font-sans font-medium hover:bg-error-container transition-colors">
+          End Session
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-20 flex h-screen">
+    <!-- Left panel: Bench + Concessions + Precedents -->
+    <aside class="w-72 flex-shrink-0 flex flex-col gap-4 p-4 overflow-y-auto bg-[#F5F0E8] shadow-[inset_-4px_0_8px_rgba(0,0,0,0.04)]">
+
+      <!-- Judge panel -->
+      <div class="clay-card p-5 rounded-xl">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-primary-container text-lg">account_balance</span>
+          </div>
+          <div>
+            <p class="font-mono text-[10px] text-primary/40 uppercase tracking-widest">HON'BLE BENCH</p>
+            <p class="font-sans text-sm font-bold text-primary" id="bench-label">Division Bench</p>
+          </div>
+        </div>
+        <div id="user-side-badge" class="text-xs font-mono bg-blue-100 text-blue-700 px-2 py-1 rounded-full inline-block">
+          You: Petitioner
+        </div>
+      </div>
+
+      <!-- Concession tracker -->
+      <div class="clay-card p-5 rounded-xl flex-1">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-serif text-sm font-bold text-primary uppercase tracking-wider">Concessions</h3>
+          <span id="concession-count" class="font-mono text-xs bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <div id="concessions-list" class="space-y-3 text-xs">
+          <p class="text-primary/40 italic font-sans">No concessions recorded yet.</p>
+        </div>
+      </div>
+
+      <!-- Cited precedents -->
+      <div class="clay-card p-5 rounded-xl">
+        <h3 class="font-serif text-sm font-bold text-primary uppercase tracking-wider mb-3">Cited in Session</h3>
+        <div id="precedents-list" class="space-y-2 text-xs">
+          <p class="text-primary/40 italic font-sans">None yet.</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Centre: Transcript + Input -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Trap warning banner -->
+      <div id="trap-banner" class="hidden clay-banner-warning mx-4 mt-4 p-5 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-white/40 rounded-full flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary text-2xl" style="font-variation-settings:'FILL' 1">bolt</span>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold text-[#5c4300]">⚡ TRAP DETECTED</h3>
+            <p id="trap-warning-text" class="text-[#795900] font-sans text-sm">Opposing counsel's last statement may contain a trap. Read carefully.</p>
+          </div>
+        </div>
+        <button onclick="dismissTrap()" class="bg-secondary text-white px-6 py-2 rounded-xl font-sans font-bold text-sm">Dismiss</button>
+      </div>
+
+      <!-- Transcript area -->
+      <div class="flex-1 overflow-y-auto p-6" id="transcript-container">
+        <div id="transcript" class="max-w-3xl mx-auto space-y-8 pb-8">
+          <!-- Entries injected here by JS -->
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="border-t border-outline-variant/20 bg-[#F5F0E8] p-4">
+        <div class="max-w-3xl mx-auto">
+          <label id="input-label" class="block text-xs font-mono text-outline uppercase tracking-widest mb-3">Your Argument</label>
+          <div class="clay-inset p-4 rounded-xl flex gap-3 items-end">
+            <textarea
+              id="argument-input"
+              rows="3"
+              placeholder="State your argument to the court..."
+              class="flex-1 bg-transparent border-none focus:ring-0 font-serif text-lg text-on-surface placeholder:text-outline-variant resize-none"
+            ></textarea>
+            <div class="flex flex-col gap-2">
+              <div class="text-xs font-mono text-outline text-right" id="word-count">0 / 500</div>
+              <div class="flex gap-2">
+                <button onclick="openObjectionModal()" class="w-10 h-10 clay-card flex items-center justify-center text-secondary hover:scale-105 transition-transform" title="Raise Objection">
+                  <span class="material-symbols-outlined text-sm">warning</span>
+                </button>
+                <button onclick="openDocumentModal()" class="w-10 h-10 clay-card flex items-center justify-center text-tertiary hover:scale-105 transition-transform" title="Produce Document">
+                  <span class="material-symbols-outlined text-sm">description</span>
+                </button>
+                <button onclick="submitArgument()" id="submit-btn" class="clay-btn-primary w-10 h-10 flex items-center justify-center text-white rounded-xl">
+                  <span class="material-symbols-outlined text-sm">send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between mt-2 text-xs text-primary/40 font-mono">
+            <span id="phase-hint">Round 0 — Opening submissions</span>
+            <span>ARGUE &nbsp;|&nbsp; OBJECT ⚡ &nbsp;|&nbsp; PRODUCE 📄</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right panel: Case file + Documents + Round nav -->
+    <aside class="w-64 flex-shrink-0 flex flex-col gap-4 p-4 overflow-y-auto bg-[#F5F0E8] shadow-[inset_4px_0_8px_rgba(0,0,0,0.04)]">
+
+      <!-- Case details -->
+      <div class="clay-card p-5 rounded-xl">
+        <h3 class="font-mono text-[10px] text-primary/40 uppercase tracking-widest mb-3">Case File</h3>
+        <p id="panel-case-title" class="font-serif text-sm font-bold text-primary mb-2">-</p>
+        <div id="panel-issues" class="flex flex-wrap gap-1">
+          <!-- Issue tags -->
+        </div>
+      </div>
+
+      <!-- Documents produced -->
+      <div class="clay-card p-5 rounded-xl flex-1">
+        <h3 class="font-mono text-[10px] text-primary/40 uppercase tracking-widest mb-3">Documents</h3>
+        <div id="documents-list" class="space-y-2">
+          <p class="text-primary/40 italic font-sans text-xs">None produced.</p>
+        </div>
+      </div>
+
+      <!-- Round navigator -->
+      <div class="clay-card p-5 rounded-xl">
+        <h3 class="font-mono text-[10px] text-primary/40 uppercase tracking-widest mb-3">Rounds</h3>
+        <div id="round-nav" class="flex flex-wrap gap-2">
+          <!-- Round dots injected here -->
+        </div>
+      </div>
+
+      <!-- End session button -->
+      <button onclick="confirmEndSession()" class="w-full py-3 rounded-xl border border-primary/20 text-primary/60 font-sans text-sm font-medium hover:border-error hover:text-error transition-colors">
+        End Session →
+      </button>
+
+    </aside>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: ANALYSIS LOADING                                   -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-loading" class="screen">
+  <main class="min-h-screen flex flex-col items-center justify-center px-8">
+    <div class="relative mb-12">
+      <div class="w-32 h-32 rounded-full bg-surface-container-lowest clay-puffy flex items-center justify-center">
+        <span class="material-symbols-outlined text-secondary text-6xl pulsing" style="font-variation-settings:'FILL' 1">gavel</span>
+      </div>
+      <div class="absolute -top-4 -right-4 w-12 h-12 bg-tertiary-fixed-dim rounded-full flex items-center justify-center clay-puffy">
+        <span class="material-symbols-outlined text-on-tertiary-fixed text-2xl" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+      </div>
+    </div>
+    <div class="text-center mb-16">
+      <h1 class="font-serif text-4xl md:text-5xl text-primary font-bold italic tracking-tight mb-4">The court is in deliberation...</h1>
+      <p class="font-sans text-primary/60 text-lg">Processing legal nuances and judicial precedents.</p>
+    </div>
+    <div class="w-full max-w-lg space-y-4" id="loading-steps">
+      <div class="loading-step" id="ls-1">
+        <div class="step-icon"><span class="material-symbols-outlined text-white text-lg">hourglass_empty</span></div>
+        <div class="step-content">
+          <div class="flex justify-between mb-2"><span class="font-sans font-medium text-primary">Reviewing submissions</span><span class="font-mono text-xs text-secondary font-bold" id="ls-1-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="ls-1-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="loading-step" id="ls-2">
+        <div class="step-icon"><span class="material-symbols-outlined text-white text-lg">hourglass_empty</span></div>
+        <div class="step-content">
+          <div class="flex justify-between mb-2"><span class="font-sans font-medium text-primary">Analysing argument strength</span><span class="font-mono text-xs text-secondary font-bold" id="ls-2-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="ls-2-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="loading-step" id="ls-3">
+        <div class="step-icon"><span class="material-symbols-outlined text-white text-lg">hourglass_empty</span></div>
+        <div class="step-content">
+          <div class="flex justify-between mb-2"><span class="font-sans font-medium text-primary">Identifying missed opportunities</span><span class="font-mono text-xs text-secondary font-bold" id="ls-3-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="ls-3-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="loading-step" id="ls-4">
+        <div class="step-icon"><span class="material-symbols-outlined text-white text-lg">hourglass_empty</span></div>
+        <div class="step-content">
+          <div class="flex justify-between mb-2"><span class="font-sans font-medium text-primary">Generating case analysis</span><span class="font-mono text-xs text-secondary font-bold" id="ls-4-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="ls-4-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: SESSION ANALYSIS                                   -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-analysis" class="screen">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#F5F0E8]/90 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <nav class="flex justify-between items-center px-12 py-4">
+      <span class="font-serif text-2xl font-bold text-primary italic">Session Analysis</span>
+      <div class="flex gap-4">
+        <button onclick="showScreen('lobby')" class="clay-btn-ghost px-5 py-2 rounded-xl font-sans text-sm">← Back to Lobby</button>
+        <button onclick="showScreen('setup')" class="clay-btn-primary px-5 py-2 rounded-xl font-sans text-sm text-white">New Session</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="pt-24 pb-16 px-12 max-w-5xl mx-auto">
+    <!-- Outcome card -->
+    <div id="outcome-card" class="clay-card p-8 rounded-xl mb-8 flex items-center justify-between">
+      <div>
+        <p class="font-mono text-xs text-primary/40 uppercase tracking-widest mb-2">Session Outcome Prediction</p>
+        <h2 id="outcome-text" class="font-serif text-4xl font-bold text-primary mb-1">—</h2>
+        <p id="outcome-reasoning" class="text-primary/60 font-sans text-sm">Generating analysis...</p>
+      </div>
+      <div class="text-right">
+        <p class="font-mono text-xs text-primary/40 mb-1">Performance Score</p>
+        <p id="score-display" class="font-serif text-5xl font-bold text-secondary">—</p>
+        <p class="font-mono text-xs text-primary/40">out of 10</p>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-4 gap-4 mb-8">
+      <div class="clay-card p-5 rounded-xl text-center">
+        <p id="stat-strong" class="font-serif text-3xl font-bold text-primary mb-1">0</p>
+        <p class="font-sans text-xs text-primary/60">Strong Arguments</p>
+      </div>
+      <div class="clay-card p-5 rounded-xl text-center">
+        <p id="stat-weak" class="font-serif text-3xl font-bold text-error mb-1">0</p>
+        <p class="font-sans text-xs text-primary/60">Weak Arguments</p>
+      </div>
+      <div class="clay-card p-5 rounded-xl text-center">
+        <p id="stat-traps" class="font-serif text-3xl font-bold text-secondary mb-1">0</p>
+        <p class="font-sans text-xs text-primary/60">Traps Detected</p>
+      </div>
+      <div class="clay-card p-5 rounded-xl text-center">
+        <p id="stat-concessions" class="font-serif text-3xl font-bold text-tertiary mb-1">0</p>
+        <p class="font-sans text-xs text-primary/60">Concessions Made</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-6 bg-surface-container p-1 rounded-xl w-fit">
+      <button onclick="switchAnalysisTab('analysis')" id="tab-analysis" class="analysis-tab active px-5 py-2 rounded-lg font-sans text-sm font-medium">📊 Analysis</button>
+      <button onclick="switchAnalysisTab('transcript')" id="tab-transcript" class="analysis-tab px-5 py-2 rounded-lg font-sans text-sm font-medium">📜 Full Transcript</button>
+      <button onclick="switchAnalysisTab('documents')" id="tab-documents" class="analysis-tab px-5 py-2 rounded-lg font-sans text-sm font-medium">📄 Documents</button>
+    </div>
+
+    <!-- Analysis tab content -->
+    <div id="analysis-tab-content">
+      <div class="space-y-4" id="analysis-accordion">
+        <!-- Accordions injected by JS -->
+      </div>
+    </div>
+
+    <!-- Transcript tab content -->
+    <div id="transcript-tab-content" class="hidden">
+      <div class="clay-card p-8 rounded-xl">
+        <pre id="full-transcript-text" class="font-serif text-sm text-on-surface leading-relaxed whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+
+    <!-- Documents tab content -->
+    <div id="documents-tab-content" class="hidden">
+      <div id="analysis-documents-list" class="space-y-4">
+        <p class="text-primary/40 font-sans text-sm">No documents produced in this session.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SCREEN: PAST SESSIONS                                      -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="screen-sessions" class="screen">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#F5F0E8]/90 backdrop-blur-md shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <nav class="flex justify-between items-center px-12 py-4">
+      <span class="font-serif text-2xl font-bold text-primary italic">Past Sessions</span>
+      <button onclick="showScreen('lobby')" class="clay-btn-ghost px-5 py-2 rounded-xl font-sans text-sm">← Back</button>
+    </nav>
+  </header>
+  <main class="pt-24 pb-16 px-12 max-w-4xl mx-auto">
+    <div id="all-sessions-list" class="space-y-4">
+      <div class="clay-card p-8 rounded-xl text-center text-primary/40 font-sans">Loading sessions...</div>
+    </div>
+  </main>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODALS                                                     -->
+<!-- ══════════════════════════════════════════════════════════ -->
+
+<!-- Objection Modal -->
+<div id="objection-modal" class="modal-overlay hidden">
+  <div class="clay-card w-full max-w-lg rounded-xl p-8 relative">
+    <button onclick="closeModal('objection-modal')" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-dim">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+    <h2 class="font-serif text-2xl font-bold text-primary mb-2">Raise an Objection</h2>
+    <p class="text-primary/60 font-sans text-sm mb-6">Select the basis for your objection.</p>
+    <div class="space-y-3 mb-6" id="objection-types">
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="obj-type" value="irrelevant" class="text-secondary"/> 
+        <span class="font-sans font-medium">Irrelevant — no bearing on the issue</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="obj-type" value="misleading" class="text-secondary"/> 
+        <span class="font-sans font-medium">Misleading — misrepresenting the law</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="obj-type" value="citation_error" class="text-secondary"/> 
+        <span class="font-sans font-medium">Citation error — case does not support the proposition</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="obj-type" value="custom" class="text-secondary"/> 
+        <span class="font-sans font-medium">Other (specify below)</span>
+      </label>
+      <input type="text" id="custom-objection" placeholder="Describe your objection..." class="clay-input w-full px-4 py-3 rounded-xl font-sans text-sm"/>
+    </div>
+    <button onclick="submitObjection()" class="clay-btn-primary w-full py-4 rounded-xl font-sans font-bold text-white">Raise Objection</button>
+  </div>
+</div>
+
+<!-- Document Modal -->
+<div id="document-modal" class="modal-overlay hidden">
+  <div class="clay-card w-full max-w-xl rounded-xl p-8 relative">
+    <button onclick="closeModal('document-modal')" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-dim">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+    <h2 class="font-serif text-2xl font-bold text-primary mb-2">Produce Legal Document</h2>
+    <p class="text-primary/60 font-sans text-sm mb-6">Select the template and purpose.</p>
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="doc-type" value="Written Submissions" checked class="text-secondary"/>
+        <span class="font-sans font-medium text-sm">Written Submissions</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="doc-type" value="Legal Notice" class="text-secondary"/>
+        <span class="font-sans font-medium text-sm">Legal Notice</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="doc-type" value="Affidavit" class="text-secondary"/>
+        <span class="font-sans font-medium text-sm">Affidavit</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer">
+        <input type="radio" name="doc-type" value="Bail Application" class="text-secondary"/>
+        <span class="font-sans font-medium text-sm">Bail Application</span>
+      </label>
+      <label class="flex items-center gap-3 p-4 rounded-xl clay-inset cursor-pointer col-span-2">
+        <input type="radio" name="doc-type" value="Writ Petition" class="text-secondary"/>
+        <span class="font-sans font-medium text-sm">Writ Petition</span>
+      </label>
+    </div>
+    <div class="mb-6">
+      <label class="font-serif text-sm font-semibold text-primary block mb-3">Filed by:</label>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="doc-side" value="yours" checked class="text-secondary"/>
+          <span class="font-sans text-sm">Your side</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="doc-side" value="opposing" class="text-secondary"/>
+          <span class="font-sans text-sm">Opposing side</span>
+        </label>
+      </div>
+    </div>
+    <button onclick="submitDocumentRequest()" class="clay-btn-primary w-full py-4 rounded-xl font-sans font-bold text-white flex items-center justify-center gap-3">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+      Generate Document
+    </button>
+  </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div id="document-viewer-modal" class="modal-overlay hidden">
+  <div class="clay-card w-full max-w-3xl rounded-xl overflow-hidden">
+    <div class="flex justify-between items-center p-6 border-b border-outline-variant/20">
+      <div>
+        <h3 id="doc-viewer-title" class="font-serif text-xl font-bold text-primary">Document</h3>
+        <p id="doc-viewer-meta" class="font-mono text-xs text-primary/40">Filed by Counsel</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="copyDocument()" class="clay-btn-ghost px-4 py-2 rounded-xl font-sans text-sm">Copy</button>
+        <button onclick="closeModal('document-viewer-modal')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-dim">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+    </div>
+    <div class="p-8 max-h-[70vh] overflow-y-auto">
+      <pre id="doc-viewer-content" class="font-serif text-sm leading-relaxed whitespace-pre-wrap text-on-surface"></pre>
+    </div>
+  </div>
+</div>
+
+<script src="/static/court/court.js"></script>
+</body>
+</html>
