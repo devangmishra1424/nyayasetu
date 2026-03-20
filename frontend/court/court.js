@@ -168,17 +168,6 @@ function enterCourtroom() {
 
 async function createNewSession() {
   try {
-    const briefingPhase = {
-      round: 0,
-      parties: {
-        user: { side: state.setupData.side, client: state.setupData.userClient },
-        opposing: { client: state.setupData.opposingParty }
-      },
-      legalIssues: state.setupData.issues,
-      jurisdiction: state.setupData.jurisdiction,
-      facts: state.setupData.facts
-    };
-
     const requestBody = {
       case_title: state.setupData.title,
       jurisdiction: state.setupData.jurisdiction,
@@ -198,23 +187,30 @@ async function createNewSession() {
       body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) throw new Error('Failed to create session');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create session');
+    }
     
     const data = await response.json();
-    state.currentSession = data.session_id;
     
-    // Initialize courtroom with opening statement
+    // CRITICAL: Set session state BEFORE initializing UI
+    state.currentSession = data.session_id;
+    state.currentRound = 0;
+    console.log("✓ Session ID stored:", state.currentSession);
+    
+    // Only AFTER session state is set, initialize courtroom UI
     showScreen('courtroom');
     await loadSessionData();
     
     // Add opening statement to transcript
     setTimeout(() => {
-      addTranscriptEntry('registrar', 'The court is now in session. ' + data.opening_statement || 'Proceedings begin.');
+      addTranscriptEntry('registrar', 'The court is now in session. ' + (data.opening_statement || 'Proceedings begin.'));
     }, 300);
 
   } catch (error) {
     console.error('Error creating session:', error);
-    alert('Failed to create session. Please try again.');
+    alert('Failed to create session: ' + error.message);
   }
 }
 
@@ -245,13 +241,27 @@ async function loadSessionData() {
 }
 
 async function submitArgument() {
+  // Validation: ensure session exists before proceeding
+  if (!state.currentSession) {
+    alert("Session not found. Please start a new case.");
+    showScreen('lobby');
+    return;
+  }
+  
   const textarea = document.getElementById('argument-input');
   const argument = textarea.value.trim();
 
-  if (!argument) return;
-  if (state.isWaitingForResponse) return;
+  if (!argument || argument.length < 10) {
+    if (argument.length > 0) alert('Argument too short (minimum 10 characters)');
+    return;
+  }
+  
+  if (state.isWaitingForResponse) {
+    alert('Waiting for court response. Please be patient.');
+    return;
+  }
 
-  // Add user's argument to transcript
+  // Add user's argument to transcript immediately
   addTranscriptEntry('user', argument);
   
   textarea.value = '';
@@ -272,7 +282,10 @@ async function submitArgument() {
       })
     });
 
-    if (!response.ok) throw new Error('Argument submission failed');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Argument submission failed');
+    }
     
     const data = await response.json();
     
@@ -327,15 +340,28 @@ async function submitArgument() {
 }
 
 async function submitObjection() {
+  console.log("Objection - Session ID:", state.currentSession); // DEBUG
+  
+  if (!state.currentSession) {
+    alert("No active session. Cannot file objection.");
+    return;
+  }
+  
   const selectedType = document.querySelector('input[name="obj-type"]:checked');
-  if (!selectedType) return;
+  if (!selectedType) {
+    alert("Please select an objection type.");
+    return;
+  }
 
   const objectionType = selectedType.value;
   let objectionText = objectionType;
 
   if (objectionType === 'custom') {
     objectionText = document.getElementById('custom-objection').value.trim();
-    if (!objectionText) return;
+    if (!objectionText) {
+      alert("Please enter your objection.");
+      return;
+    }
   }
 
   try {
@@ -356,13 +382,24 @@ async function submitObjection() {
         addTranscriptEntry('judge', data.judge_response);
       }
       closeModal('objection-modal');
+    } else {
+      const error = await response.json();
+      alert('Error filing objection: ' + (error.detail || 'Unknown error'));
     }
   } catch (error) {
     console.error('Objection error:', error);
+    alert('Error filing objection: ' + error.message);
   }
 }
 
 async function submitDocumentRequest() {
+  console.log("Document request - Session ID:", state.currentSession); // DEBUG
+  
+  if (!state.currentSession) {
+    alert("No active session. Cannot produce document.");
+    return;
+  }
+  
   const docType = document.querySelector('input[name="doc-type"]:checked').value;
   const docSide = document.querySelector('input[name="doc-side"]:checked').value;
 
@@ -378,22 +415,27 @@ async function submitDocumentRequest() {
       })
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      state.documents.push({
-        id: state.documents.length,
-        title: docType,
-        content: data.document_content,
-        filedBy: docSide,
-        timestamp: new Date()
-      });
-      
-      addTranscriptEntry('user', `[DOCUMENT PRODUCED: ${docType}]`);
-      renderDocumentsList();
-      closeModal('document-modal');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to produce document');
     }
+    
+    const data = await response.json();
+    state.documents.push({
+      id: state.documents.length,
+      title: docType,
+      content: data.document_content,
+      filedBy: docSide,
+      timestamp: new Date()
+    });
+    
+    addTranscriptEntry('user', `[DOCUMENT PRODUCED: ${docType}]`);
+    renderDocumentsList();
+    closeModal('document-modal');
+    alert('Document produced and filed successfully.');
   } catch (error) {
     console.error('Document error:', error);
+    alert('Error producing document: ' + error.message);
   } finally {
     state.isWaitingForResponse = false;
   }
