@@ -300,13 +300,17 @@ def court_new_session(request: NewSessionRequest):
     from src.court.brief import generate_fresh_brief
     from src.court.registrar import build_round_announcement
     
+    # Handle field aliases (support both frontend field names and schema names)
+    brief_facts = request.brief_facts or request.case_facts or ""
+    bench_composition = request.bench_composition or request.bench_type or "division"
+    
     case_brief = generate_fresh_brief(
         case_title=request.case_title,
         user_side=request.user_side,
         user_client=request.user_client,
         opposing_party=request.opposing_party,
         legal_issues=request.legal_issues,
-        brief_facts=request.brief_facts,
+        brief_facts=brief_facts,
         jurisdiction=request.jurisdiction,
     )
     
@@ -316,9 +320,9 @@ def court_new_session(request: NewSessionRequest):
         user_client=request.user_client,
         opposing_party=request.opposing_party,
         legal_issues=request.legal_issues,
-        brief_facts=request.brief_facts,
+        brief_facts=brief_facts,
         jurisdiction=request.jurisdiction,
-        bench_composition=request.bench_composition,
+        bench_composition=bench_composition,
         difficulty=request.difficulty,
         session_length=request.session_length,
         show_trap_warnings=request.show_trap_warnings,

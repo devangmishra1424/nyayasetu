@@ -8,16 +8,23 @@ from typing import Optional, List, Dict, Any
 
 class NewSessionRequest(BaseModel):
     case_title: str
-    user_side: str  # petitioner | respondent
-    user_client: str
-    opposing_party: str
-    legal_issues: List[str]
-    brief_facts: str
+    user_side: str = "petitioner"  # petitioner | respondent
+    user_client: str = "Petitioner"
+    opposing_party: str = "Respondent"
+    legal_issues: List[str] = []
+    brief_facts: str = ""
+    case_facts: str = ""  # alias for brief_facts if frontend sends this
     jurisdiction: str = "supreme_court"
     bench_composition: str = "division"  # single | division | constitutional
+    bench_type: str = "division"  # alias for bench_composition if frontend sends this
     difficulty: str = "standard"         # moot | standard | adversarial
     session_length: str = "standard"     # brief | standard | extended
+    max_rounds: int = 5  # optional max rounds
     show_trap_warnings: bool = True
+
+    class Config:
+        # Allow both snake_case and camelCase fields
+        populate_by_name = True
 
 
 class ImportSessionRequest(BaseModel):
