@@ -112,6 +112,10 @@ load_reranker()
 from src.citation_graph import load_citation_graph
 load_citation_graph()
 
+# Load court sessions from HuggingFace dataset on startup
+from src.court.session import load_sessions_from_hf
+load_sessions_from_hf()
+
 AGENT_VERSION = os.getenv("AGENT_VERSION", "v2")
 
 if AGENT_VERSION == "v2":
@@ -266,3 +270,248 @@ def analytics():
         "entity_type_frequency": entity_freq,
         "recent_latencies": latencies[-20:],
     }
+
+
+# ── COURT ENDPOINTS ────────────────────────────────────────────
+
+from api.court_schemas import (
+    NewSessionRequest, ImportSessionRequest, ArgueRequest,
+    ObjectionRequest, DocumentRequest, EndSessionRequest,
+    RoundResponse, SessionSummary
+)
+
+
+@app.post("/court/new")
+def court_new_session(request: NewSessionRequest):
+    """Start a fresh moot court session."""
+    from src.court.session import create_session
+    from src.court.brief import generate_fresh_brief
+    from src.court.registrar import build_round_announcement
+    
+    case_brief = generate_fresh_brief(
+        case_title=request.case_title,
+        user_side=request.user_side,
+        user_client=request.user_client,
+        opposing_party=request.opposing_party,
+        legal_issues=request.legal_issues,
+        brief_facts=request.brief_facts,
+        jurisdiction=request.jurisdiction,
+    )
+    
+    session_id = create_session(
+        case_title=request.case_title,
+        user_side=request.user_side,
+        user_client=request.user_client,
+        opposing_party=request.opposing_party,
+        legal_issues=request.legal_issues,
+        brief_facts=request.brief_facts,
+        jurisdiction=request.jurisdiction,
+        bench_composition=request.bench_composition,
+        difficulty=request.difficulty,
+        session_length=request.session_length,
+        show_trap_warnings=request.show_trap_warnings,
+        case_brief=case_brief,
+    )
+    
+    # Registrar opens the session
+    from src.court.session import get_session, add_transcript_entry
+    session = get_session(session_id)
+    opening = build_round_announcement(session, 0, "briefing")
+    add_transcript_entry(
+        session_id=session_id,
+        speaker="REGISTRAR",
+        role_label="COURT REGISTRAR",
+        content=opening,
+        entry_type="announcement",
+    )
+    
+    return {
+        "session_id": session_id,
+        "case_brief": case_brief,
+        "opening_announcement": opening,
+        "phase": "briefing",
+    }
+
+
+@app.post("/court/import")
+def court_import_session(request: ImportSessionRequest):
+    """Import a NyayaSetu research session into Moot Court."""
+    from src.court.session import create_session, add_transcript_entry
+    from src.court.brief import generate_case_brief
+    from src.court.registrar import build_round_announcement
+    from src.agent_v2 import sessions as research_sessions
+    
+    research_session = research_sessions.get(request.research_session_id)
+    if not research_session:
+        raise HTTPException(status_code=404, detail="Research session not found")
+    
+    case_state = research_session.get("case_state", {})
+    
+    case_brief = generate_case_brief(research_session, request.user_side)
+    
+    # Extract case details from research session
+    parties = case_state.get("parties", [])
+    case_title = f"{parties[0]} vs {parties[1]}" if len(parties) >= 2 else "Present Matter"
+    legal_issues_raw = research_session.get("case_state", {}).get("disputes", [])
+    
+    session_id = create_session(
+        case_title=case_title,
+        user_side=request.user_side,
+        user_client=parties[0] if parties else "Petitioner",
+        opposing_party=parties[1] if len(parties) > 1 else "Respondent",
+        legal_issues=legal_issues_raw[:5],
+        brief_facts=research_session.get("summary", ""),
+        jurisdiction="supreme_court",
+        bench_composition=request.bench_composition,
+        difficulty=request.difficulty,
+        session_length=request.session_length,
+        show_trap_warnings=request.show_trap_warnings,
+        imported_from_session=request.research_session_id,
+        case_brief=case_brief,
+    )
+    
+    from src.court.session import get_session
+    session = get_session(session_id)
+    opening = build_round_announcement(session, 0, "briefing")
+    add_transcript_entry(
+        session_id=session_id,
+        speaker="REGISTRAR",
+        role_label="COURT REGISTRAR",
+        content=opening,
+        entry_type="announcement",
+    )
+    
+    return {
+        "session_id": session_id,
+        "case_brief": case_brief,
+        "opening_announcement": opening,
+        "phase": "briefing",
+        "imported_from": request.research_session_id,
+    }
+
+
+@app.post("/court/argue")
+def court_argue(request: ArgueRequest):
+    """Submit an argument or answer during the session."""
+    from src.court.orchestrator import process_user_argument
+    
+    if not request.session_id or not request.argument.strip():
+        raise HTTPException(status_code=400, detail="Session ID and argument required")
+    
+    result = process_user_argument(request.session_id, request.argument)
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@app.post("/court/object")
+def court_object(request: ObjectionRequest):
+    """Raise an objection."""
+    from src.court.orchestrator import process_objection
+    
+    result = process_objection(
+        request.session_id,
+        request.objection_type,
+        request.objection_text,
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@app.post("/court/document")
+def court_document(request: DocumentRequest):
+    """Generate and produce a legal document."""
+    from src.court.orchestrator import process_document_request
+    
+    result = process_document_request(
+        request.session_id,
+        request.doc_type,
+        request.for_side,
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@app.post("/court/end")
+def court_end_session(request: EndSessionRequest):
+    """End the session and generate full analysis."""
+    from src.court.orchestrator import generate_session_analysis
+    from src.court.session import get_session
+    
+    session = get_session(request.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session["phase"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Session is in phase '{session['phase']}' — complete closing arguments first"
+        )
+    
+    analysis = generate_session_analysis(request.session_id)
+    
+    if "error" in analysis:
+        raise HTTPException(status_code=500, detail=analysis["error"])
+    
+    return analysis
+
+
+@app.get("/court/session/{session_id}")
+def court_get_session(session_id: str):
+    """Get full session data including transcript."""
+    from src.court.session import get_session
+    
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return session
+
+
+@app.get("/court/sessions")
+def court_list_sessions():
+    """List all sessions."""
+    from src.court.session import get_all_sessions
+    
+    sessions = get_all_sessions()
+    
+    # Return summary only
+    summaries = []
+    for s in sessions:
+        summaries.append({
+            "session_id": s["session_id"],
+            "case_title": s["case_title"],
+            "user_side": s["user_side"],
+            "phase": s["phase"],
+            "current_round": s["current_round"],
+            "max_rounds": s["max_rounds"],
+            "created_at": s["created_at"],
+            "updated_at": s["updated_at"],
+            "outcome_prediction": s.get("outcome_prediction"),
+            "performance_score": s.get("performance_score"),
+            "concession_count": len(s.get("concessions", [])),
+            "trap_count": len(s.get("trap_events", [])),
+        })
+    
+    return {"sessions": summaries, "total": len(summaries)}
+
+
+@app.post("/court/cross_exam/start")
+def court_start_cross_exam(session_id: str):
+    """Manually trigger cross-examination phase."""
+    from src.court.orchestrator import start_cross_examination
+    
+    result = start_cross_examination(session_id)
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
