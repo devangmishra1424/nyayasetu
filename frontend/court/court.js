@@ -278,7 +278,7 @@ async function submitArgument() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         session_id: state.currentSession,
-        user_argument: argument
+        argument: argument
       })
     });
 
@@ -410,8 +410,8 @@ async function submitDocumentRequest() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         session_id: state.currentSession,
-        document_type: docType,
-        filed_by: docSide
+        doc_type: docType,
+        for_side: docSide
       })
     });
 
