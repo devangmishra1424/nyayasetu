@@ -376,6 +376,7 @@ def _persist_session(session_id: str):
     """
     Persist session to HuggingFace Dataset.
     Fails silently — in-memory session is still valid.
+    Non-critical: if HF upload fails, session continues working offline.
     """
     if not HF_TOKEN:
         return
@@ -385,33 +386,36 @@ def _persist_session(session_id: str):
         import threading
         
         def _upload():
-            api = HfApi(token=HF_TOKEN)
-            session_data = json.dumps(_sessions[session_id], ensure_ascii=False)
-            
             try:
-                api.create_repo(
+                api = HfApi(token=HF_TOKEN)
+                session_data = json.dumps(_sessions[session_id], ensure_ascii=False)
+                
+                try:
+                    api.create_repo(
+                        repo_id=SESSIONS_REPO,
+                        repo_type="dataset",
+                        private=True,
+                        exist_ok=True
+                    )
+                except Exception as repo_err:
+                    logger.debug(f"Could not create/access HF repo: {repo_err}")
+                
+                api.upload_file(
+                    path_or_fileobj=session_data.encode(),
+                    path_in_repo=f"sessions/{session_id}.json",
                     repo_id=SESSIONS_REPO,
                     repo_type="dataset",
-                    private=True,
-                    exist_ok=True
+                    token=HF_TOKEN
                 )
-            except Exception:
-                pass
-            
-            api.upload_file(
-                path_or_fileobj=session_data.encode(),
-                path_in_repo=f"sessions/{session_id}.json",
-                repo_id=SESSIONS_REPO,
-                repo_type="dataset",
-                token=HF_TOKEN
-            )
+            except Exception as upload_err:
+                logger.debug(f"Session upload to HF failed (working offline): {upload_err}")
         
         # Run in background thread — never blocks the response
         thread = threading.Thread(target=_upload, daemon=True)
         thread.start()
         
     except Exception as e:
-        logger.warning(f"Session persist failed (non-critical): {e}")
+        logger.debug(f"Session persist setup failed (non-critical): {e}")
 
 
 def load_sessions_from_hf():

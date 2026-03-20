@@ -5,6 +5,10 @@ V2 agent with conversation memory and 3-pass reasoning.
 Port 7860 for HuggingFace Spaces compatibility.
 """
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
