@@ -64,6 +64,86 @@ def _call_llm(messages: List[Dict]) -> str:
     return call_llm_raw(messages)
 
 
+def _build_full_context(session: Dict) -> str:
+    """
+    Builds complete context string fed to every LLM call.
+    Ensures nothing goes wasted — case brief, all arguments, all documents,
+    all concessions, all traps are included in every agent's view.
+    
+    This is the single source of context enrichment for the moot court.
+    """
+    parts = []
+    
+    # ── Case foundation ────────────────────────────────────────
+    parts.append("=== CASE FOUNDATION ===")
+    parts.append(f"Case: {session.get('case_title', '')}")
+    parts.append(f"Your side: {session.get('user_side', '').upper()}")
+    parts.append(f"Legal issues: {', '.join(session.get('legal_issues', []))}")
+    if session.get('brief_facts'):
+        parts.append(f"Facts: {session.get('brief_facts', '')[:400]}")
+    parts.append("")
+    
+    # ── Case brief (preserved throughout) ───────────────────────
+    case_brief = session.get("case_brief", "")
+    if case_brief:
+        parts.append("=== CASE BRIEF & RESEARCH ===")
+        parts.append(case_brief[:1200])
+        parts.append("")
+    
+    # ── Documents produced (CRITICAL — opposing counsel sees these) ──
+    docs = session.get("documents_produced", [])
+    if docs:
+        parts.append("=== DOCUMENTS ON RECORD ===")
+        for doc in docs:
+            parts.append(f"[{doc.get('type', 'DOCUMENT')} — filed by {doc.get('for_side', 'COUNSEL')}]")
+            parts.append(doc.get("content", "")[:500])
+            parts.append("")
+    
+    # ── All concessions made (CRITICAL — opposing counsel exploits these) ──
+    concessions = session.get("concessions", [])
+    if concessions:
+        parts.append("=== CONCESSIONS ON RECORD (EXPLOIT THESE) ===")
+        for c in concessions:
+            parts.append(
+                f"Round {c.get('round_number', '?')}: \"{c.get('exact_quote', '')[:120]}\" "
+                f"({c.get('legal_significance', 'Concession')[:80]})"
+            )
+        parts.append("")
+    
+    # ── Trap history (opposing counsel knows what worked before) ──
+    traps = session.get("trap_events", [])
+    if traps:
+        parts.append("=== TRAP HISTORY ===")
+        for t in traps:
+            fell = "USER FELL IN" if t.get("user_fell_in") else "user avoided"
+            parts.append(
+                f"Round {t.get('round_number', '?')} [{t.get('trap_type', 'trap').upper()}] {fell}: "
+                f"{t.get('trap_text', '')[:120]}"
+            )
+        parts.append("")
+    
+    # ── Full user argument history (consistency checking) ────────
+    user_args = session.get("user_arguments", [])
+    if user_args:
+        parts.append("=== USER'S ARGUMENT HISTORY ===")
+        for arg in user_args:
+            parts.append(f"Round {arg.get('round', '?')}: {arg.get('text', '')[:250]}")
+        parts.append("")
+    
+    # ── Recent transcript (verbatim, untruncated where possible) ─
+    transcript = session.get("transcript", [])
+    if transcript:
+        recent = transcript[-10:]  # More entries than before (was 4, now 10)
+        parts.append("=== RECENT PROCEEDINGS ===")
+        for entry in recent:
+            role = entry.get('role_label', entry.get('speaker', 'SPEAKER')).upper()
+            content = entry.get('content', '')[:300]
+            parts.append(f"{role}: {content}")
+            parts.append("")
+    
+    return "\n".join(parts)
+
+
 def _retrieve_for_court(query: str, session: Dict) -> str:
     """
     Retrieve relevant precedents for court use.
@@ -156,9 +236,13 @@ def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict
     
     add_user_argument(session_id, user_argument, [])
     
-    # Retrieve context for both agents
+    # Build full context with all case info
+    full_context = _build_full_context(session)
+    
+    # Retrieve additional precedents
     query = f"{session.get('case_title', '')} {' '.join(session.get('legal_issues', []))}"
-    retrieved_context = _retrieve_for_court(query, session)
+    retrieved_precedents = _retrieve_for_court(query, session)
+    combined_context = full_context + "\n\n=== RETRIEVED PRECEDENTS ===\n" + retrieved_precedents if retrieved_precedents else full_context
     
     # Check for trap opportunity
     trap_info = detect_trap_opportunity(user_argument, [], session)
@@ -167,7 +251,7 @@ def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict
     opposing_messages = build_opposing_prompt(
         session=session,
         user_argument=user_argument,
-        retrieved_context=retrieved_context,
+        retrieved_context=combined_context,
         trap_opportunity=trap_info[1] if trap_info else None,
     )
     
@@ -193,7 +277,7 @@ def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict
     judge_messages = build_judge_prompt(
         session=get_session(session_id),  # Fresh session after updates
         last_user_argument=user_argument,
-        retrieved_context=retrieved_context,
+        retrieved_context=combined_context,
     )
     
     try:
@@ -270,12 +354,17 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
         key_claims=_extract_key_claims(user_argument),
     )
     
-    # Retrieve context
+    # Build full context — EVERYTHING is preserved and fed to agents
+    fresh_session = get_session(session_id)
+    full_context = _build_full_context(fresh_session)
+    
+    # Retrieve additional precedents and combine
     legal_issues = " ".join(session.get("legal_issues", []))
     query = f"{user_argument[:200]} {legal_issues}"
-    retrieved_context = _retrieve_for_court(query, session)
+    retrieved_precedents = _retrieve_for_court(query, session)
+    combined_context = full_context + "\n\n=== RETRIEVED PRECEDENTS ===\n" + retrieved_precedents if retrieved_precedents else full_context
     
-    # Detect traps
+    # Detect traps (based on full history)
     trap_info = detect_trap_opportunity(
         user_argument,
         session.get("user_arguments", []),
@@ -283,11 +372,10 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
     )
     
     # ── LLM Call 1: Opposing counsel ──────────────────────────
-    fresh_session = get_session(session_id)
     opposing_messages = build_opposing_prompt(
         session=fresh_session,
         user_argument=user_argument,
-        retrieved_context=retrieved_context,
+        retrieved_context=combined_context,
         trap_opportunity=trap_info[1] if trap_info else None,
     )
     
@@ -323,7 +411,7 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
     judge_messages = build_judge_prompt(
         session=fresh_session,
         last_user_argument=user_argument,
-        retrieved_context=retrieved_context,
+        retrieved_context=combined_context,
     )
     
     try:
@@ -410,13 +498,16 @@ def _handle_cross_exam_answer(
     # If more questions remaining (max 3), get next question
     if question_number < 3:
         query = " ".join(session.get("legal_issues", []))
-        retrieved_context = _retrieve_for_court(query, session)
+        retrieved_precedents = _retrieve_for_court(query, session)
         
         fresh_session = get_session(session_id)
+        full_context = _build_full_context(fresh_session)
+        combined_context = full_context + "\n\n=== RETRIEVED PRECEDENTS ===\n" + retrieved_precedents if retrieved_precedents else full_context
+        
         cross_messages = build_cross_examination_prompt(
             session=fresh_session,
             question_number=question_number + 1,
-            retrieved_context=retrieved_context,
+            retrieved_context=combined_context,
         )
         
         try:

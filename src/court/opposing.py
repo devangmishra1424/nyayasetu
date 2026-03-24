@@ -98,40 +98,40 @@ def build_opposing_prompt(
     Build the messages list for opposing counsel LLM call.
     
     The opposing counsel sees:
-    - Case brief (user's research, gaps)
+    - Full case brief (preserved throughout)
+    - All documents filed (critical!)
+    - All concessions made (critical!)
     - Full recent transcript
     - User's latest argument
     - Retrieved precedents to use against user
     - Any detected trap opportunities
-    - All concessions made so far
+    - Trap history
     """
     difficulty = session.get("difficulty", "standard")
     difficulty_modifier = DIFFICULTY_MODIFIERS.get(difficulty, DIFFICULTY_MODIFIERS["standard"])
     
-    case_brief = session.get("case_brief", "")
-    concessions = _format_concessions(session.get("concessions", []))
-    inconsistencies = _detect_inconsistencies(session.get("user_arguments", []))
-    transcript_recent = _get_recent_transcript(session, last_n=4)
+    # The retrieved_context now contains EVERYTHING from _build_full_context
+    # including case brief, documents, concessions, and precedents
+    # This is the complete informational context
     
     trap_instruction = ""
     if trap_opportunity:
-        trap_instruction = f"\nTRAP OPPORTUNITY DETECTED: {trap_opportunity}\nConsider exploiting this in your response."
-    elif inconsistencies:
-        trap_instruction = f"\nINCONSISTENCY DETECTED: {inconsistencies}\nConsider using the inconsistency trap."
+        trap_instruction = f"\n🎯 TRAP OPPORTUNITY DETECTED: {trap_opportunity}\nConsider exploiting this in your response."
     
-    user_content = f"""CASE BRIEF (your preparation before court):
-{case_brief[:1500]}
+    user_content = f"""COMPLETE SESSION CONTEXT (use all of this):
+{retrieved_context[:4000]}
 
-RECENT TRANSCRIPT:
-{transcript_recent}
-
-{concessions}
-
-RETRIEVED LEGAL AUTHORITIES (use these against the user):
-{retrieved_context[:2000] if retrieved_context else "Use your general legal knowledge."}
-
-USER'S LATEST ARGUMENT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER'S LATEST ARGUMENT (respond to this specifically):
 {user_argument}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL REMINDERS:
+1. You have full access to all documents filed by the user
+2. You have the complete history of the user's arguments
+3. You have all concessions made — exploit them mercilessly
+4. You have seen all trap attempts before — use what worked
+5. You know their case brief — you know their weaknesses
 
 Round {session.get('current_round', 1)} of {session.get('max_rounds', 5)}.
 {trap_instruction}
@@ -234,18 +234,95 @@ Deliver your closing argument."""
     ]
 
 
+def detect_trap_opportunity_llm(
+    user_argument: str,
+    session: Dict,
+) -> Optional[Tuple[str, str]]:
+    """
+    Use LLM to detect trap opportunities semantically.
+    More sophisticated than keyword matching — understands legal logic.
+    Falls back to keyword detection if LLM fails.
+    
+    Returns (trap_type, description) or None.
+    """
+    try:
+        from src.llm import call_llm_raw
+        import json
+        import re
+        
+        # Build minimal context for trap analysis
+        case_brief = session.get("case_brief", "")[:500]
+        concessions = session.get("concessions", [])
+        user_args = session.get("user_arguments", [])
+        
+        concessions_text = ""
+        if concessions:
+            concessions_text = "Previous concessions by user: " + "; ".join(
+                [c.get("exact_quote", "")[:60] for c in concessions[-3:]]
+            )
+        
+        previous_args_text = ""
+        if len(user_args) >= 2:
+            previous_args_text = "User argued in Round 1: " + user_args[0].get("text", "")[:150]
+        
+        system_prompt = """You are a legal trap detector for a moot court simulation.
+Analyze if the user's argument contains a trap opportunity for opposing counsel.
+
+Return ONLY valid JSON:
+{
+  "trap_found": true/false,
+  "trap_type": "admission_trap|precedent_trap|inconsistency_trap|none",
+  "description": "brief description of the trap"
+}
+
+Trap types:
+- admission_trap: User made an absolute claim (e.g., "no exceptions", "unlimited", "cannot be restricted")
+- precedent_trap: User cited a case that actually supports opposition when read carefully
+- inconsistency_trap: User contradicted their own previous argument
+"""
+        
+        user_prompt = f"""Case brief: {case_brief}
+
+{concessions_text}
+
+{previous_args_text}
+
+User's latest argument: {user_argument}
+
+Detect trap opportunity. Return ONLY JSON."""
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        response = call_llm_raw(messages)
+        
+        # Extract JSON from response
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+        if match:
+            data = json.loads(match.group())
+            if data.get("trap_found"):
+                trap_type = data.get("trap_type", "admission_trap")
+                if trap_type != "none":
+                    return (trap_type, data.get("description", "Trap detected"))
+    
+    except Exception as e:
+        logger.debug(f"LLM trap detection failed, falling back to keyword: {e}")
+    
+    # Fall back to keyword-based detection
+    return detect_trap_opportunity(user_argument, session.get("user_arguments", []), session)
+
+
 def detect_trap_opportunity(
     user_argument: str,
     previous_arguments: List[Dict],
     session: Dict,
 ) -> Optional[Tuple[str, str]]:
     """
-    Analyse user's argument to detect trap opportunities.
+    Analyse user's argument to detect trap opportunities (keyword-based fallback).
     
     Returns (trap_type, description) or None.
-    
-    This runs before the LLM call so we can include
-    trap instruction in the prompt when relevant.
     """
     arg_lower = user_argument.lower()
     
