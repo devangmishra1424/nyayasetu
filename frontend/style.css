@@ -52,6 +52,53 @@ body {
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .new-chat-btn span:not(.new-chat-icon),
+.sidebar.collapsed .sidebar-section-label,
+.sidebar.collapsed .session-label,
+.sidebar.collapsed .session-count,
+.sidebar.collapsed .footer-disclaimer,
+.sidebar.collapsed .footer-meta {
+  display: none;
+}
+
+.sidebar.collapsed .new-chat-btn {
+  width: calc(100% - 16px);
+  margin: 12px 8px;
+  padding: 8px;
+  justify-content: center;
+}
+
+.sidebar.collapsed .analytics-btn {
+  width: calc(100% - 16px);
+  margin: 0 8px 8px;
+  padding: 10px 8px;
+  justify-content: center;
+}
+
+.sidebar.collapsed .new-chat-icon,
+.sidebar.collapsed .analytics-icon {
+  margin: 0;
+}
+
+.sidebar.collapsed .sessions-list {
+  padding: 0 8px;
+}
+
+.sidebar.collapsed .session-item {
+  padding: 9px 10px;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 8px 8px;
 }
 
 .sidebar-brand {
@@ -60,6 +107,29 @@ body {
   gap: 12px;
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), background var(--transition);
+}
+
+.sidebar-toggle:hover {
+  color: var(--text-1);
+  background: var(--navy-3);
 }
 
 .brand-mark {

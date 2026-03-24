@@ -5,11 +5,17 @@ const API_BASE = ""; // "" = same origin (HF Spaces). "http://localhost:8000" fo
 let sessions = [];          // [{id, title, messages:[]}]
 let activeSessionId = null;
 let isLoading = false;
+let sidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
 // ── Init ────────────────────────────────────────────────────────
 const textarea  = document.getElementById("query-input");
 const sendBtn   = document.getElementById("send-btn");
 const msgsList  = document.getElementById("messages-list");
+
+// Apply sidebar collapsed state on load
+if (sidebarCollapsed) {
+  document.getElementById("sidebar").classList.add("collapsed");
+}
 
 textarea.addEventListener("input", () => {
   textarea.style.height = "auto";
@@ -24,6 +30,14 @@ textarea.addEventListener("keydown", e => {
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById("screen-" + name).classList.add("active");
+}
+
+// ── Sidebar toggle ───────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  sidebarCollapsed = !sidebarCollapsed;
+  sidebar.classList.toggle("collapsed");
+  localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
 }
 
 // ── Session management ───────────────────────────────────────────
