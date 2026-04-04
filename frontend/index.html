@@ -5,99 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NyayaSetu — Indian Legal Research</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <div class="app-container">
   
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR - JUDICIAL PANEL -->
   <aside class="sidebar" id="sidebar">
+    <!-- Header with Judicial Seal -->
     <div class="sidebar-header">
-      <div class="brand">
-        <span class="brand-icon">⚖</span>
-        <div class="brand-text">
-          <div class="brand-name">NyayaSetu</div>
-          <div class="brand-sub">Legal Research</div>
-        </div>
+      <div class="judicial-seal">
+        <svg viewBox="0 0 100 100" class="seal-svg">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <!-- Scale/Balance symbol -->
+          <path d="M50 20 L35 45 L65 45 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="35" y1="45" x2="65" y2="45" stroke="currentColor" stroke-width="2"/>
+          <circle cx="35" cy="55" r="3" fill="currentColor"/>
+          <circle cx="65" cy="55" r="3" fill="currentColor"/>
+          <text x="50" y="75" font-size="8" text-anchor="middle" font-weight="bold" letter-spacing="1">NYAYASETU</text>
+        </svg>
       </div>
-      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="brand-text">
+        <div class="brand-name">NYAYA SETU</div>
+        <div class="brand-sub">Legal Research Registry</div>
+      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()">≡</button>
     </div>
 
-    <button class="btn-primary" onclick="newChat()">+ New Session</button>
-    <button class="btn-secondary" onclick="showAnalytics()">📊 Analytics</button>
-    <button class="btn-secondary" onclick="window.location.href='/court/ui'">⚖ Moot Court</button>
-
-    <div class="sessions-header">SESSIONS</div>
-    <div class="sessions-list" id="sessions-list">
-      <div class="sessions-empty">No sessions</div>
+    <!-- Primary Actions -->
+    <div class="action-group">
+      <button class="btn-primary" onclick="newChat()">⊕ New Petition</button>
+      <button class="btn-secondary" onclick="showAnalytics()">📋 Case Analytics</button>
+      <button class="btn-secondary" onclick="window.location.href='/court/ui'">⚔ Moot Court</button>
     </div>
 
+    <!-- Case Registry -->
+    <div class="registry-section">
+      <div class="registry-header">
+        <span class="registry-title">CASE REGISTRY</span>
+        <div class="registry-divider"></div>
+      </div>
+      <div class="sessions-list" id="sessions-list">
+        <div class="sessions-empty">No active cases</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer - Court Info -->
     <div class="sidebar-footer">
-      <p class="disclaimer">⚠ Not legal advice</p>
-      <p class="meta">Supreme Court of India · 1950–2024</p>
+      <div class="court-info">
+        <p class="disclaimer">⚠ DISCLAIMER</p>
+        <p class="disclaimer-text">Not legal advice. Consult qualified advocate.</p>
+      </div>
+      <div class="court-meta">
+        <p class="meta-text">Supreme Court of India</p>
+        <p class="meta-text">Established 1950</p>
+      </div>
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN CONTENT AREA -->
   <main class="main-content">
+    <!-- Header/Bench -->
     <header class="topbar">
-      <h1 class="topbar-title" id="topbar-title">New Research Session</h1>
-      <div class="status-pill" id="status-pill">
+      <div class="topbar-left">
+        <h1 class="topbar-title" id="topbar-title">Research Session</h1>
+        <p class="topbar-subtitle" id="topbar-subtitle">Indian Legal Research System</p>
+      </div>
+      <div class="status-indicator" id="status-pill">
         <span class="status-dot"></span>
         <span id="status-text">Ready</span>
       </div>
     </header>
 
-    <!-- WELCOME SCREEN -->
+    <!-- Welcome/Research Section -->
     <section id="screen-welcome" class="screen active">
       <div class="welcome-container">
-        <div class="welcome-icon">⚖</div>
-        <h2>Ask Indian Law</h2>
-        <p>Search across 26,688 Supreme Court judgments.<br>Every answer is cited. Every source is traceable.</p>
+        <div class="welcome-graphic">
+          <svg viewBox="0 0 200 200" class="welcome-icon">
+            <!-- Judge's Bench -->
+            <rect x="20" y="120" width="160" height="40" fill="none" stroke="currentColor" stroke-width="2" rx="2"/>
+            <!-- Gavel -->
+            <rect x="85" y="30" width="30" height="50" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="100" cy="20" r="12" fill="currentColor" opacity="0.3"/>
+            <!-- Scales -->
+            <line x1="50" y1="80" x2="50" y2="120" stroke="currentColor" stroke-width="2"/>
+            <line x1="35" y1="100" x2="65" y2="100" stroke="currentColor" stroke-width="2"/>
+            <circle cx="35" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="65" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <!-- Books -->
+            <rect x="130" y="70" width="15" height="35" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="148" y="65" width="15" height="40" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h2>Indian Legal Research</h2>
+        <p class="welcome-subtitle">Query 26,688 Supreme Court Judgments<br><span class="text-muted">Cited sources | Verified citations | Complete legal brief</span></p>
+        
         <div class="suggestions">
-          <button class="suggestion" onclick="usesuggestion(this)">What are fundamental rights?</button>
-          <button class="suggestion" onclick="usesuggestion(this)">What is the right to privacy under Article 21?</button>
-          <button class="suggestion" onclick="usesuggestion(this)">How does the Supreme Court define bail?</button>
-          <button class="suggestion" onclick="usesuggestion(this)">What is the basic structure doctrine?</button>
-          <button class="suggestion" onclick="usesuggestion(this)">What does Article 15 prohibit?</button>
-          <button class="suggestion" onclick="usesuggestion(this)">How is freedom of speech limited?</button>
+          <div class="suggestion-label">Sample Petitions:</div>
+          <button class="suggestion" onclick="usesuggestion(this)">Fundamental Rights — Definition & Scope</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Right to Privacy under Article 21</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Bail — Legal Framework & Supreme Court Tests</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Basic Structure Doctrine — Implications</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Article 15 — Non-discrimination Doctrine</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Freedom of Speech — Reasonable Restrictions</button>
         </div>
       </div>
     </section>
 
-    <!-- CHAT SCREEN -->
+    <!-- Chat/Case Proceedings Section -->
     <section id="screen-chat" class="screen">
       <div class="chat-area">
-        <div class="messages" id="messages-list"></div>
+        <div class="proceedings" id="messages-list"></div>
+      </div>
+      <div class="input-bench">
+        <textarea id="query-input" placeholder="Address the court... (Enter to submit, Shift+Enter for new line)" class="query-input"></textarea>
+        <button id="send-btn" class="btn-submit" onclick="submitQuery()">📤 Submit Petition</button>
       </div>
     </section>
 
-    <!-- ANALYTICS SCREEN -->
+    <!-- Analytics Dashboard -->
     <section id="screen-analytics" class="screen">
       <div class="analytics-container">
-        <h2>System Analytics</h2>
-        <p>Live metrics from inference logs</p>
+        <div class="analytics-header">
+          <h2>Case Analytics & System Metrics</h2>
+          <p>Live inference data from NyayaSetu research engine</p>
+        </div>
         <div class="stats-grid">
           <div class="stat-card">
+            <div class="stat-icon">📊</div>
             <div class="stat-value" id="stat-total">—</div>
             <div class="stat-label">Total Queries</div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon">✓</div>
             <div class="stat-value" id="stat-verified">—</div>
-            <div class="stat-label">Verified Rate</div>
+            <div class="stat-label">Verified Answers</div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon">⚡</div>
             <div class="stat-value" id="stat-latency">—</div>
             <div class="stat-label">Avg Latency</div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon">🔍</div>
             <div class="stat-value" id="stat-ood">—</div>
             <div class="stat-label">Out-of-Domain</div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon">📚</div>
             <div class="stat-value" id="stat-sources">—</div>
-            <div class="stat-label">Avg Sources</div>
+            <div class="stat-label">Avg Sources Used</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
           </div>
         </div>
       </div>

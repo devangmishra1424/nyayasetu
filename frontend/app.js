@@ -7,7 +7,7 @@ let sidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
 const textarea = document.getElementById("query-input");
 const sendBtn = document.getElementById("send-btn");
-const messagesList = document.getElementById("messages-list");
+const proceedings = document.getElementById("proceedings");
 
 if (sidebarCollapsed) {
   document.getElementById("sidebar").classList.add("collapsed");
@@ -62,7 +62,7 @@ function switchSession(id) {
 
 function newChat() {
   activeSessionId = null;
-  messagesList.innerHTML = "";
+  proceedings.innerHTML = "";
   showScreen("welcome");
   document.getElementById("topbar-title").textContent = "New Research Session";
   renderSessionsList();
@@ -85,7 +85,7 @@ function renderSessionsList() {
 function renderMessages() {
   const session = getActiveSession();
   if (!session) return;
-  messagesList.innerHTML = "";
+  proceedings.innerHTML = "";
   session.messages.forEach(msg => {
     if (msg.role === "user") appendUserBubble(msg.text, false);
     else if (msg.role === "ai") appendAIBubble(msg.data, false);
@@ -155,7 +155,7 @@ function appendUserBubble(text, scroll = true) {
   const div = document.createElement("div");
   div.className = "message user";
   div.innerHTML = `<div class="bubble user">${escHtml(text)}</div>`;
-  messagesList.appendChild(div);
+  proceedings.appendChild(div);
   if (scroll) scrollBottom();
 }
 
@@ -180,7 +180,7 @@ function appendAIBubble(data, scroll = true) {
         ${latency}
       </div>
     </div>`;
-  messagesList.appendChild(div);
+  proceedings.appendChild(div);
   if (scroll) scrollBottom();
 }
 
@@ -188,7 +188,7 @@ function appendErrorBubble(text, scroll = true) {
   const div = document.createElement("div");
   div.className = "message ai";
   div.innerHTML = `<div class="bubble ai" style="border-left-color: var(--red);">⚠ ${escHtml(text)}</div>`;
-  messagesList.appendChild(div);
+  proceedings.appendChild(div);
   if (scroll) scrollBottom();
 }
 
@@ -202,7 +202,7 @@ function appendLoader() {
       <div class="dots"><span></span><span></span><span></span></div>
       Searching...
     </div>`;
-  messagesList.appendChild(div);
+  proceedings.appendChild(div);
   scrollBottom();
   return id;
 }
