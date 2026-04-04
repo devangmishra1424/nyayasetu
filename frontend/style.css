@@ -444,7 +444,7 @@ body {
   margin: 0 auto;
   padding: 0 24px;
   display: flex;
-  flex-d0rection: column;
+  flex-direction: column;
   gap: 28px;
 }
 
@@ -850,9 +850,8 @@ body {
 }
 .analytics-btn:hover {
   background: var(--navy-3);
-  color: va20px 24px;
-  overflow-y: auto;
-  height: 100%;
+  border-color: var(--border-gold);
+  color: var(--text-1);
 }
 .analytics-inner {
   max-width: 900px;
