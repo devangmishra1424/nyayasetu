@@ -453,19 +453,24 @@ body {
 }
 
 /* ── Message bubbles ── */
-.msg { display: flex; flex-direction: column; gap: 6px; animation: fadeUp 0.3s ease; width: 100%; }
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeUp 0.3s ease;
+  width: 100%;
+  margin-bottom: 4px;
+}
 
-.msg-user { align-items: flex-end; }
-.msg-ai   { align-items: flex-start; }
+.msg-user { align-items: flex-end; margin: 0 0 8px 0; }
+.msg-ai { align-items: flex-start; margin: 0 0 8px 0; }
 
 .bubble-user {
   background: var(--navy-4);
   border: 1px solid var(--border);
   border-radius: 16px 16px 4px 16px;
   padding: 10px 14px;
-  width: fit-content;
-  max-width: 60%;
-  min-width: 60px;
+  max-width: 70%;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -480,9 +485,7 @@ body {
   border-left: 3px solid var(--gold);
   border-radius: 4px 16px 16px 16px;
   padding: 14px 18px;
-  width: fit-content;
-  max-width: 72%;
-  min-width: 60px;
+  max-width: 85%;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
