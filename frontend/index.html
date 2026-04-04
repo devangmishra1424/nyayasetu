@@ -1,118 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NyayaSetu — Indian Legal Research</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style_new.css">
 </head>
 <body>
-
-<div class="app-layout">
-
-  <!-- ── SIDEBAR ── -->
+<div class="app-container">
+  
+  <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-mark">⚖</div>
-      <div class="brand-text">
-        <span class="brand-name">NyayaSetu</span>
-        <span class="brand-sub">Legal Research</span>
+    <div class="sidebar-header">
+      <div class="brand">
+        <span class="brand-icon">⚖</span>
+        <div class="brand-text">
+          <div class="brand-name">NyayaSetu</div>
+          <div class="brand-sub">Legal Research</div>
+        </div>
       </div>
-      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
     </div>
 
-    <button class="new-chat-btn" onclick="newChat()">
-      <span class="new-chat-icon">＋</span>
-      New Research Session
-    </button>
+    <button class="btn-primary" onclick="newChat()">+ New Session</button>
+    <button class="btn-secondary" onclick="showAnalytics()">📊 Analytics</button>
+    <button class="btn-secondary" onclick="window.location.href='/court/ui'">⚖ Moot Court</button>
 
-    <button class="analytics-btn" onclick="showAnalytics()">
-      <span class="analytics-icon">📊</span>
-      System Analytics
-    </button>
-
-    <button class="analytics-btn" onclick="window.location.href='/court/ui'">
-      <span class="analytics-icon">⚖️</span>
-      Moot Court
-    </button>
-
-    <div class="sidebar-section-label">SESSIONS</div>
-    <div id="sessions-list" class="sessions-list">
-      <div class="sessions-empty">No sessions yet</div>
+    <div class="sessions-header">SESSIONS</div>
+    <div class="sessions-list" id="sessions-list">
+      <div class="sessions-empty">No sessions</div>
     </div>
 
     <div class="sidebar-footer">
-      <div class="footer-disclaimer">
-        <span class="disclaimer-icon">⚠</span>
-        <span>Not legal advice. Consult a qualified advocate.</span>
-      </div>
-      <div class="footer-meta">
-        Supreme Court of India · 1950–2024<br>
-        443,598 judgment chunks indexed
-      </div>
+      <p class="disclaimer">⚠ Not legal advice</p>
+      <p class="meta">Supreme Court of India · 1950–2024</p>
     </div>
   </aside>
 
-  <!-- ── MAIN ── -->
-  <div class="main-wrapper">
-
-    <!-- Top bar -->
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
     <header class="topbar">
-      <div class="topbar-left">
-        <span class="topbar-title" id="topbar-title">New Research Session</span>
-      </div>
-      <div class="topbar-right">
-        <div class="status-pill" id="status-pill">
-          <span class="status-dot"></span>
-          <span id="status-text">Ready</span>
-        </div>
+      <h1 class="topbar-title" id="topbar-title">New Research Session</h1>
+      <div class="status-pill" id="status-pill">
+        <span class="status-dot"></span>
+        <span id="status-text">Ready</span>
       </div>
     </header>
 
-    <!-- ── WELCOME SCREEN ── -->
-    <div id="screen-welcome" class="screen screen-welcome active">
-      <div class="welcome-inner">
-        <div class="welcome-emblem">⚖</div>
-        <h1 class="welcome-heading">Ask Indian Law</h1>
-        <p class="welcome-body">
-          Search across 26,688 Supreme Court judgments.<br>
-          Every answer is cited. Every source is traceable.
-        </p>
-        <div class="suggestion-grid">
-          <button class="suggestion-pill" onclick="usesuggestion(this)">What are fundamental rights under the Constitution?</button>
-          <button class="suggestion-pill" onclick="usesuggestion(this)">What is the right to privacy under Article 21?</button>
-          <button class="suggestion-pill" onclick="usesuggestion(this)">How does the Supreme Court define bail in non-bailable offences?</button>
-          <button class="suggestion-pill" onclick="usesuggestion(this)">What is the basic structure doctrine?</button>
-          <button class="suggestion-pill" onclick="usesuggestion(this)">What does Article 15 prohibit?</button>
-          <button class="suggestion-pill" onclick="usesuggestion(this)">How is freedom of speech limited under Article 19?</button>
+    <!-- WELCOME SCREEN -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-container">
+        <div class="welcome-icon">⚖</div>
+        <h2>Ask Indian Law</h2>
+        <p>Search across 26,688 Supreme Court judgments.<br>Every answer is cited. Every source is traceable.</p>
+        <div class="suggestions">
+          <button class="suggestion" onclick="usesuggestion(this)">What are fundamental rights?</button>
+          <button class="suggestion" onclick="usesuggestion(this)">What is the right to privacy under Article 21?</button>
+          <button class="suggestion" onclick="usesuggestion(this)">How does the Supreme Court define bail?</button>
+          <button class="suggestion" onclick="usesuggestion(this)">What is the basic structure doctrine?</button>
+          <button class="suggestion" onclick="usesuggestion(this)">What does Article 15 prohibit?</button>
+          <button class="suggestion" onclick="usesuggestion(this)">How is freedom of speech limited?</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ── CHAT SCREEN ── -->
-    <div id="screen-chat" class="screen screen-chat">
-      <div id="messages-container" class="messages-container">
-        <div id="messages-list" class="messages-list"></div>
+    <!-- CHAT SCREEN -->
+    <section id="screen-chat" class="screen">
+      <div class="chat-area">
+        <div class="messages" id="messages-list"></div>
       </div>
-    </div>
+    </section>
 
-    <!-- ── ANALYTICS SCREEN ── -->
-    <div id="screen-analytics" class="screen screen-analytics">
-      <div class="analytics-inner">
-        <div class="analytics-header">
-          <h2>System Analytics</h2>
-          <p>Live metrics from inference logs</p>
-        </div>
-        
-        <div class="analytics-grid">
+    <!-- ANALYTICS SCREEN -->
+    <section id="screen-analytics" class="screen">
+      <div class="analytics-container">
+        <h2>System Analytics</h2>
+        <p>Live metrics from inference logs</p>
+        <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value" id="stat-total">—</div>
             <div class="stat-label">Total Queries</div>
@@ -127,69 +93,27 @@
           </div>
           <div class="stat-card">
             <div class="stat-value" id="stat-ood">—</div>
-            <div class="stat-label">Out-of-Domain Rate</div>
+            <div class="stat-label">Out-of-Domain</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="stat-sources">—</div>
-            <div class="stat-label">Avg Sources / Query</div>
+            <div class="stat-label">Avg Sources</div>
           </div>
         </div>
-
-        <div class="analytics-charts">
-          <div class="chart-card">
-            <h3>Stage Distribution</h3>
-            <div id="chart-stages" class="chart-container"></div>
-          </div>
-          <div class="chart-card">
-            <h3>Entity Types Extracted</h3>
-            <div id="chart-entities" class="chart-container"></div>
-          </div>
-          <div class="chart-card">
-            <h3>Recent Query Latencies (ms)</h3>
-            <div id="chart-latency" class="chart-container"></div>
-          </div>
-        </div>
-
-        <div class="analytics-footer">
-          <button class="refresh-btn" onclick="loadAnalytics()">↻ Refresh</button>
-          <span class="analytics-note">Data from current session logs. Resets on container restart.</span>
-        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ── SOURCES PANEL ── -->
-    <div id="sources-panel" class="sources-panel">
-      <div class="sources-panel-header">
-        <span class="sources-panel-title">Sources</span>
-        <button class="sources-panel-close" onclick="closeSourcesPanel()">✕</button>
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea id="query-input" class="query-input" placeholder="Ask about Indian law..." maxlength="1000"></textarea>
+        <button id="send-btn" class="send-btn" onclick="submitQuery()">→</button>
       </div>
-      <div id="sources-panel-body" class="sources-panel-body"></div>
+      <p class="disclaimer-line">Not a substitute for professional legal advice</p>
     </div>
-    <div id="sources-overlay" class="sources-overlay" onclick="closeSourcesPanel()"></div>
-
-    <!-- ── INPUT ── -->
-    <div class="input-zone">
-      <div class="input-box">
-        <textarea
-          id="query-input"
-          class="query-textarea"
-          placeholder="Ask a question about Indian law…"
-          rows="1"
-          maxlength="1000"
-        ></textarea>
-        <button id="send-btn" class="send-btn" onclick="submitQuery()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </div>
-      <p class="input-disclaimer">NyayaSetu is not a substitute for professional legal advice.</p>
-    </div>
-
-  </div>
+  </main>
 </div>
 
-<script src="/static/app.js?v=2"></script>
+<script src="/static/app_new.js"></script>
 </body>
 </html>
