@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 # ── OpenRouter (primary) ──────────────────────────────────
 _openrouter_client = None
+_openrouter_models = [
+    "arcee-ai/trinity-large-preview:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free"    
+]
 
 # ── HuggingFace Inference API (fallback) ──────────────────
 _hf_client = None
@@ -60,14 +65,22 @@ _hf_ready = _init_hf()
 
 
 def _call_openrouter(messages: list) -> str:
-    """Call OpenRouter."""
-    response = _openrouter_client.chat.completions.create(
-        model="meta-llama/llama-3.3-70b-instruct:free",
-        messages=messages,
-        max_tokens=1500,
-        temperature=0.3,
-    )
-    return response.choices[0].message.content
+    """Call OpenRouter with fallback across multiple models."""
+    for model in _openrouter_models:
+        try:
+            response = _openrouter_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=1500,
+                temperature=0.3,
+            )
+            logger.info(f"OpenRouter success with {model}")
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.warning(f"OpenRouter model {model} failed: {e}")
+            continue
+    
+    raise Exception("All OpenRouter models failed")
 
 
 def _call_hf(messages: list) -> str:
