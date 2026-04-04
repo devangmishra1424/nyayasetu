@@ -432,7 +432,9 @@ body {
 .messages-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 0 12px;
+  width: 100%;
   max-height: calc(100vh - var(--topbar-h) - var(--input-h) - 40px);
 }
 
@@ -440,12 +442,14 @@ body {
 .messages-container::-webkit-scrollbar-thumb { background: var(--navy-4); border-radius: 2px; }
 
 .messages-list {
+  width: 100%;
   max-width: 760px;
   margin: 0 auto;
   padding: 0 24px;
   display: flex;
   flex-direction: column;
   gap: 28px;
+  flex-wrap: nowrap;
 }
 
 /* ── Message bubbles ── */
