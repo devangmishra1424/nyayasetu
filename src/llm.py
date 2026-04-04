@@ -117,24 +117,24 @@ def _call_groq(messages: list) -> str:
 
 
 def _call_with_fallback(messages: list) -> str:
-    """Try HF first, then OpenRouter, then Groq."""
-    if _hf_ready and _hf_client:
+    """Try Groq first, then OpenRouter, then HF."""
+    if _groq_ready and _groq_client:
         try:
-            return _call_hf(messages)
+            return _call_groq(messages)
         except Exception as e:
-            logger.warning(f"HF Inference failed: {e}, trying OpenRouter")
+            logger.warning(f"Groq failed: {e}, trying OpenRouter")
 
     if _openrouter_ready and _openrouter_client:
         try:
             return _call_openrouter(messages)
         except Exception as e:
-            logger.warning(f"OpenRouter failed: {e}, trying Groq")
+            logger.warning(f"OpenRouter failed: {e}, trying HF Inference")
 
-    if _groq_ready and _groq_client:
+    if _hf_ready and _hf_client:
         try:
-            return _call_groq(messages)
+            return _call_hf(messages)
         except Exception as e:
-            logger.error(f"Groq also failed: {e}")
+            logger.error(f"HF Inference also failed: {e}")
 
     raise Exception("All LLM providers failed")
 
