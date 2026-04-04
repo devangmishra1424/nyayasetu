@@ -1,5 +1,5 @@
 """
-LLM module. OpenRouter as primary, HuggingFace Inference API as fallback.
+LLM module. HuggingFace Inference API as primary, OpenRouter as fallback.
 """
 
 import os
@@ -34,7 +34,7 @@ def _init_openrouter():
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
         )
-        logger.info("OpenRouter ready (primary)")
+        logger.info("OpenRouter ready (fallback)")
         return True
     except Exception as e:
         logger.error(f"OpenRouter init failed: {e}")
@@ -53,7 +53,7 @@ def _init_hf():
             model="meta-llama/Llama-3.3-70B-Instruct",
             token=token
         )
-        logger.info("HF Inference API ready (fallback)")
+        logger.info("HF Inference API ready (primary)")
         return True
     except Exception as e:
         logger.error(f"HF Inference API init failed: {e}")
@@ -94,18 +94,18 @@ def _call_hf(messages: list) -> str:
 
 
 def _call_with_fallback(messages: list) -> str:
-    """Try OpenRouter first, then HF."""
-    if _openrouter_ready and _openrouter_client:
-        try:
-            return _call_openrouter(messages)
-        except Exception as e:
-            logger.warning(f"OpenRouter failed: {e}, trying HF Inference")
-
+    """Try HF first, then OpenRouter."""
     if _hf_ready and _hf_client:
         try:
             return _call_hf(messages)
         except Exception as e:
-            logger.error(f"HF Inference also failed: {e}")
+            logger.warning(f"HF Inference failed: {e}, trying OpenRouter")
+
+    if _openrouter_ready and _openrouter_client:
+        try:
+            return _call_openrouter(messages)
+        except Exception as e:
+            logger.error(f"OpenRouter also failed: {e}")
 
     raise Exception("All LLM providers failed")
 
