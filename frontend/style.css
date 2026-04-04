@@ -449,7 +449,7 @@ body {
 }
 
 /* ── Message bubbles ── */
-.msg { display: flex; flex-direction: column; gap: 6px; animation: fadeUp 0.3s ease; }
+.msg { display: flex; flex-direction: column; gap: 6px; animation: fadeUp 0.3s ease; width: 100%; }
 
 .msg-user { align-items: flex-end; }
 .msg-ai   { align-items: flex-start; }
@@ -846,12 +846,13 @@ body {
   color: var(--text-2);
   font-size: 13px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
 .analytics-btn:hover {
   background: var(--navy-3);
   border-color: var(--border-gold);
   color: var(--text-1);
+  transform: none;
 }
 .analytics-inner {
   max-width: 900px;
