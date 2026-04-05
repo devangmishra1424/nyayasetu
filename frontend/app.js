@@ -26,8 +26,15 @@ textarea.addEventListener("keydown", e => {
 });
 
 function showScreen(name) {
+  console.log("showScreen called with name:", name);
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("screen-" + name).classList.add("active");
+  const screenEl = document.getElementById("screen-" + name);
+  if (!screenEl) {
+    console.error("Screen element not found:", "screen-" + name);
+    return;
+  }
+  screenEl.classList.add("active");
+  console.log("Screen switched to:", name);
 }
 
 function toggleSidebar() {
@@ -98,24 +105,29 @@ function renderMessages() {
 async function submitQuery() {
   const query = textarea.value.trim();
   if (!query || isLoading) return;
-  if (query.length < 5) { alert("Query too short (minimum 5 characters)"); return; }
+  if (query.length < 10) { alert("Query too short (minimum 10 characters)"); return; }
   if (query.length > 1000) { alert("Query too long"); return; }
 
   setLoading(true);
+  console.log("=== Submitting Query ===");
+  console.log("Query:", query);
 
   // Create session if needed and switch to chat view
   if (!activeSessionId) {
     createSession(query);
+    console.log("Created new session:", activeSessionId);
   }
 
   // Ensure chat screen is visible
   showScreen("chat");
+  console.log("Switched to chat screen");
 
   const session = getActiveSession();
   
   // Add user message to session and display
   session.messages.push({ role: "user", text: query });
   appendUserBubble(query);
+  console.log("Added user message to session");
   
   // Clear input
   textarea.value = "";
@@ -123,38 +135,52 @@ async function submitQuery() {
   
   // Show loading state
   const loaderId = appendLoader();
+  console.log("Showing loader:", loaderId);
 
   try {
+    const sessionId = activeSessionId ? String(activeSessionId) : "default";
+    console.log("Posting to /query with session_id:", sessionId);
+    
     const res = await fetch(`${API_BASE}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         query,
-        session_id: activeSessionId ? String(activeSessionId) : "default"
+        session_id: sessionId
       })
     });
 
+    console.log("Response status:", res.status);
+    console.log("Response ok:", res.ok);
+
     const data = await res.json();
+    console.log("Response data:", data);
+    
     removeLoader(loaderId);
+    console.log("Removed loader");
 
     if (!res.ok) {
-      const msg = data.detail || "Error: please try again";
+      const msg = data.detail || data.error || JSON.stringify(data) || "Error: please try again";
+      console.error("API Error:", msg);
       session.messages.push({ role: "error", text: msg });
       appendErrorBubble(msg);
     } else {
+      console.log("API Success - Adding AI message");
       session.messages.push({ role: "ai", data });
       appendAIBubble(data);
+      console.log("AI message added");
     }
   } catch (err) {
     removeLoader(loaderId);
-    console.error("Query error:", err);
-    const msg = "Could not reach server - check console for details";
+    console.error("Fetch error:", err);
+    const msg = `Connection error: ${err.message}`;
     session.messages.push({ role: "error", text: msg });
     appendErrorBubble(msg);
   }
 
   setLoading(false);
   scrollBottom();
+  console.log("=== Query Complete ===");
 }
 
 function usesuggestion(queryText) {
@@ -165,6 +191,7 @@ function usesuggestion(queryText) {
 }
 
 function appendUserBubble(text, scroll = true) {
+  console.log("appendUserBubble called with text:", text);
   const div = document.createElement("div");
   div.className = "flex items-start gap-4 ml-12 flex-row-reverse";
   div.innerHTML = `
@@ -177,12 +204,18 @@ function appendUserBubble(text, scroll = true) {
     </div>
   `;
   messagesList.appendChild(div);
+  console.log("User message appended to DOM");
   if (scroll) scrollBottom();
 }
 
 function appendAIBubble(data, scroll = true) {
+  console.log("appendAIBubble called with data:", data);
+  
+  // Handle different response structures
+  const answer = data.answer || data.response || data.text || JSON.stringify(data);
   const verified = data.verification_status === true || data.verification_status === "verified";
-  const sourceCount = (data.sources || []).length;
+  const sourceCount = (data.sources || data.source_judgments || []).length;
+  
   const sourcesBtn = sourceCount > 0 ? `
     <button class="text-[11px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1 hover:underline">
       <span class="material-symbols-outlined text-sm">description</span> ${sourceCount} Citation${sourceCount > 1 ? "s" : ""}
@@ -197,7 +230,7 @@ function appendAIBubble(data, scroll = true) {
     <div class="clay-card p-6 bg-white text-primary leading-relaxed shadow-sm max-w-2xl">
       <p class="text-sm font-medium mb-4">Registry Assistant</p>
       <div class="font-serif text-lg leading-relaxed text-primary/90">
-        ${formatAnswer(data.answer)}
+        ${formatAnswer(answer)}
       </div>
       <div class="mt-6 pt-4 border-t border-primary/5 flex gap-4">
         ${sourcesBtn}
@@ -208,10 +241,12 @@ function appendAIBubble(data, scroll = true) {
     </div>
   `;
   messagesList.appendChild(div);
+  console.log("AI message appended to DOM");
   if (scroll) scrollBottom();
 }
 
 function appendErrorBubble(text, scroll = true) {
+  console.error("appendErrorBubble called with text:", text);
   const div = document.createElement("div");
   div.className = "flex items-start gap-4 mr-12";
   div.innerHTML = `
@@ -224,6 +259,7 @@ function appendErrorBubble(text, scroll = true) {
     </div>
   `;
   messagesList.appendChild(div);
+  console.log("Error message appended to DOM");
   if (scroll) scrollBottom();
 }
 
@@ -245,7 +281,12 @@ function appendLoader() {
       </div>
     </div>
   `;
+  if (!messagesList) {
+    console.error("messagesList element not found!");
+    return id;
+  }
   messagesList.appendChild(div);
+  console.log("Loader appended with id:", id, "messagesList children:", messagesList.children.length);
   scrollBottom();
   return id;
 }
@@ -277,7 +318,14 @@ function scrollBottom() {
 }
 
 function formatAnswer(text) {
-  if (!text) return "";
+  if (!text) {
+    console.warn("formatAnswer received empty text");
+    return "<em>No response received</em>";
+  }
+  if (typeof text !== "string") {
+    console.log("formatAnswer received non-string:", typeof text);
+    return "<em>Invalid response format</em>";
+  }
   return text.replace(/\n/g, "<br>");
 }
 
