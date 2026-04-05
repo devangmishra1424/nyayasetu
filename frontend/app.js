@@ -226,12 +226,12 @@ function appendUserBubble(text, scroll = true) {
   const div = document.createElement("div");
   div.className = "flex items-start gap-4 ml-12 flex-row-reverse";
   div.innerHTML = `
-    <div class="w-10 h-10 clay-card flex-shrink-0 bg-primary text-white flex items-center justify-center">
-      <span class="material-symbols-outlined">person</span>
+    <div class="w-8 h-8 clay-card flex-shrink-0 bg-primary text-white flex items-center justify-center">
+      <span class="material-symbols-outlined text-sm">person</span>
     </div>
-    <div class="clay-card p-6 bg-primary-container text-white shadow-lg max-w-xl">
-      <p class="text-sm opacity-60 mb-2">Advocate</p>
-      <p class="font-medium">${escHtml(text)}</p>
+    <div class="clay-card p-4 bg-primary-container text-white shadow-lg max-w-xl">
+      <p class="text-xs opacity-60 mb-1.5">You</p>
+      <p class="text-sm leading-relaxed">${escHtml(text)}</p>
     </div>
   `;
   messagesList.appendChild(div);
@@ -248,25 +248,25 @@ function appendAIBubble(data, scroll = true) {
   const sourceCount = (data.sources || data.source_judgments || []).length;
   
   const sourcesBtn = sourceCount > 0 ? `
-    <button class="text-[11px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1 hover:underline">
-      <span class="material-symbols-outlined text-sm">description</span> ${sourceCount} Citation${sourceCount > 1 ? "s" : ""}
+    <button class="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:underline">
+      <span class="material-symbols-outlined text-xs">description</span> ${sourceCount} Citation${sourceCount > 1 ? "s" : ""}
     </button>` : "";
 
   const div = document.createElement("div");
   div.className = "flex items-start gap-4 mr-12";
   div.innerHTML = `
-    <div class="w-10 h-10 clay-card flex-shrink-0 bg-secondary-container flex items-center justify-center text-primary">
-      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+    <div class="w-8 h-8 clay-card flex-shrink-0 bg-secondary-container flex items-center justify-center text-primary">
+      <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
     </div>
-    <div class="clay-card p-6 bg-white text-primary leading-relaxed shadow-sm max-w-2xl">
-      <p class="text-sm font-medium mb-4">Registry Assistant</p>
-      <div class="font-serif text-lg leading-relaxed text-primary/90">
+    <div class="clay-card p-4 bg-white text-primary leading-relaxed shadow-sm max-w-2xl">
+      <p class="text-xs font-medium mb-2.5 text-primary/70">Registry Assistant</p>
+      <div class="text-sm leading-relaxed text-primary/90">
         ${formatAnswer(answer)}
       </div>
-      <div class="mt-6 pt-4 border-t border-primary/5 flex gap-4">
+      <div class="mt-4 pt-3 border-t border-primary/5 flex gap-3 flex-wrap">
         ${sourcesBtn}
-        <button class="text-[11px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1 hover:underline">
-          <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Export Brief
+        <button class="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:underline">
+          <span class="material-symbols-outlined text-xs">picture_as_pdf</span> Export
         </button>
       </div>
     </div>
@@ -281,12 +281,12 @@ function appendErrorBubble(text, scroll = true) {
   const div = document.createElement("div");
   div.className = "flex items-start gap-4 mr-12";
   div.innerHTML = `
-    <div class="w-10 h-10 clay-card flex-shrink-0 bg-error-container flex items-center justify-center text-error">
-      <span class="material-symbols-outlined">error</span>
+    <div class="w-8 h-8 clay-card flex-shrink-0 bg-error-container flex items-center justify-center text-error">
+      <span class="material-symbols-outlined text-lg">error</span>
     </div>
-    <div class="clay-card p-6 bg-error-container text-error-container/90 shadow-sm">
-      <p class="text-sm font-medium mb-2">Error</p>
-      <p>${escHtml(text)}</p>
+    <div class="clay-card p-4 bg-error-container text-error-container/90 shadow-sm">
+      <p class="text-xs font-medium mb-1.5">Error</p>
+      <p class="text-sm">${escHtml(text)}</p>
     </div>
   `;
   messagesList.appendChild(div);
@@ -300,15 +300,15 @@ function appendLoader() {
   div.id = id;
   div.className = "flex items-start gap-4 mr-12";
   div.innerHTML = `
-    <div class="w-10 h-10 clay-card flex-shrink-0 bg-secondary-container flex items-center justify-center text-primary animate-pulse">
-      <span class="material-symbols-outlined">smart_toy</span>
+    <div class="w-8 h-8 clay-card flex-shrink-0 bg-secondary-container flex items-center justify-center text-primary animate-pulse">
+      <span class="material-symbols-outlined text-lg">smart_toy</span>
     </div>
-    <div class="clay-card p-6 bg-white text-primary">
-      <p class="text-sm font-medium">Searching legal archives...</p>
-      <div class="flex gap-2 mt-4">
-        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0s"></div>
-        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+    <div class="clay-card p-4 bg-white text-primary">
+      <p class="text-xs font-medium">Searching legal archives...</p>
+      <div class="flex gap-1.5 mt-3">
+        <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 0s"></div>
+        <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+        <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
       </div>
     </div>
   `;
