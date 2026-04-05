@@ -5,6 +5,7 @@
 const state = {
   currentSession: null,
   currentScreen: 'lobby',
+  currentPhase: 'briefing',  // Track court phase
   setupStep: 1,
   setupData: {
     side: null,
@@ -128,15 +129,28 @@ function goToStep(step) {
   }
   if (state.setupStep === 2) {
     const title = document.getElementById('case-title').value.trim();
+    const facts = document.getElementById('brief-facts').value.trim();
+    
     if (!title) {
-      alert('Please enter case title');
+      alert('⚠ Case title is required');
       console.warn('Cannot advance: case title missing');
       return;
     }
+    if (!facts || facts.length < 20) {
+      alert('⚠ Please provide detailed facts (minimum 20 characters). The system needs facts to generate appropriate charges and legal context.');
+      console.warn('Cannot advance: facts too brief');
+      return;
+    }
+    if (!state.setupData.issues || state.setupData.issues.length === 0) {
+      alert('⚠ Please add at least one legal issue. Without legal issues, the court cannot focus arguments properly.');
+      console.warn('Cannot advance: no legal issues');
+      return;
+    }
+    
     state.setupData.title = title;
     state.setupData.userClient = document.getElementById('user-client').value;
     state.setupData.opposingParty = document.getElementById('opposing-party').value;
-    state.setupData.facts = document.getElementById('brief-facts').value;
+    state.setupData.facts = facts;
     state.setupData.jurisdiction = document.getElementById('jurisdiction').value;
   }
 
@@ -257,7 +271,7 @@ async function submitArgument() {
   }
   
   if (state.isWaitingForResponse) {
-    alert('Waiting for court response. Please be patient.');
+    alert('⏳ Waiting for court response. Please be patient.');
     return;
   }
 
@@ -315,28 +329,76 @@ async function submitArgument() {
       });
     }
 
-    // Update round
+    // Update round and phase
     state.currentRound = data.round;
+    state.currentPhase = data.phase;  // CRITICAL: Track current phase
     updateRoundIndicator();
 
-    // Check if session should end
-    if (data.session_ended) {
+    // Check if session ended or phase changed
+    if (data.session_ended || data.phase === 'completed') {
       setTimeout(() => {
         showScreen('loading');
         finishLoadingAnimation();
         state.currentSession = data.session_id;
         showScreen('analysis');
       }, 2500);
+    } else if (data.phase === 'closing') {
+      // Provide guidance for closing arguments
+      setTimeout(() => {
+        state.isWaitingForResponse = false;  // CRITICAL: Reset waiting state
+        showScreen('courtroom');
+        showClosingArgumentsGuidance();
+      }, 2500);
     } else {
+      // Standard rounds phase
+      state.isWaitingForResponse = false;  // CRITICAL: Reset waiting state
       setTimeout(() => showScreen('courtroom'), 2500);
     }
 
   } catch (error) {
     console.error('Error submitting argument:', error);
     alert('Error submitting argument. Please try again.');
-    state.isWaitingForResponse = false;
+    state.isWaitingForResponse = false;  // Reset on error
     showScreen('courtroom');
   }
+}
+
+/**
+ * Show UI guidance for closing arguments phase.
+ */
+function showClosingArgumentsGuidance() {
+  const textarea = document.getElementById('argument-input');
+  const placeholder = textarea.getAttribute('placeholder');
+  
+  // Update placeholder for closing arguments
+  textarea.setAttribute('placeholder', 'Provide your closing arguments... (summarize key points, address judge\'s concerns)');
+  
+  // Show notification
+  const notification = document.createElement('div');
+  notification.className = 'closing-phase-notification';
+  notification.innerHTML = `
+    <div style="padding: 16px; background: rgba(212,175,55,0.15); border: 2px solid #d4af37; border-radius: 4px; margin-bottom: 16px;">
+      <p style="font-weight: 600; color: #d4af37; margin: 0 0 8px 0;">📜 Closing Arguments Phase</p>
+      <p style="margin: 0; font-size: 13px; color: #4a4a4a; line-height: 1.5;">
+        The court is ready for closing arguments. Summarize your case, address the judge's questions, 
+        and make your final legal submissions. This is your last opportunity to persuade the court.
+      </p>
+    </div>
+  `;
+  
+  const container = document.querySelector('.argument-input-section');
+  if (container) {
+    // Remove old notification if exists
+    const oldNotif = container.querySelector('.closing-phase-notification');
+    if (oldNotif) oldNotif.remove();
+    
+    // Insert new notification before textarea
+    textarea.parentNode.insertBefore(notification, textarea);
+  }
+  
+  // Focus textarea
+  textarea.focus();
+  console.log('✓ Closing arguments guidance displayed');
 }
 
 async function submitObjection() {

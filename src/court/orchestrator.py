@@ -328,6 +328,7 @@ def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict
         "new_concessions": [],
         "round_number": 1,
         "phase": "rounds",
+        "session_ended": False,
     }
 
 
@@ -463,6 +464,7 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
         "new_concessions": new_concessions,
         "round_number": new_round,
         "phase": new_phase,
+        "session_ended": new_phase == "completed",
     }
 
 
@@ -533,6 +535,7 @@ def _handle_cross_exam_answer(
             "round_number": session["current_round"],
             "phase": "cross_examination",
             "cross_exam_complete": False,
+            "session_ended": False,
         }
     
     else:
@@ -558,6 +561,7 @@ def _handle_cross_exam_answer(
             "round_number": session["current_round"],
             "phase": "closing",
             "cross_exam_complete": True,
+            "session_ended": False,
         }
 
 
@@ -637,6 +641,7 @@ def _handle_closing(session_id: str, user_closing: str, session: Dict) -> Dict:
         "round_number": session["current_round"],
         "phase": "completed",
         "ready_for_analysis": True,
+        "session_ended": True,
     }
 
 
