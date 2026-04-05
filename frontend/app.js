@@ -98,21 +98,31 @@ function renderMessages() {
 async function submitQuery() {
   const query = textarea.value.trim();
   if (!query || isLoading) return;
-  if (query.length < 10) { alert("Query too short"); return; }
+  if (query.length < 5) { alert("Query too short (minimum 5 characters)"); return; }
   if (query.length > 1000) { alert("Query too long"); return; }
 
+  setLoading(true);
+
+  // Create session if needed and switch to chat view
   if (!activeSessionId) {
     createSession(query);
-    showScreen("chat");
-    document.getElementById("topbar-title").textContent = getActiveSession().title;
   }
 
-  getActiveSession().messages.push({ role: "user", text: query });
+  // Ensure chat screen is visible
+  showScreen("chat");
+
+  const session = getActiveSession();
+  
+  // Add user message to session and display
+  session.messages.push({ role: "user", text: query });
+  appendUserBubble(query);
+  
+  // Clear input
   textarea.value = "";
   textarea.style.height = "auto";
-  appendUserBubble(query);
+  
+  // Show loading state
   const loaderId = appendLoader();
-  setLoading(true);
 
   try {
     const res = await fetch(`${API_BASE}/query`, {
@@ -129,16 +139,17 @@ async function submitQuery() {
 
     if (!res.ok) {
       const msg = data.detail || "Error: please try again";
-      getActiveSession().messages.push({ role: "error", text: msg });
+      session.messages.push({ role: "error", text: msg });
       appendErrorBubble(msg);
     } else {
-      getActiveSession().messages.push({ role: "ai", data });
+      session.messages.push({ role: "ai", data });
       appendAIBubble(data);
     }
   } catch (err) {
     removeLoader(loaderId);
-    const msg = "Could not reach server";
-    getActiveSession().messages.push({ role: "error", text: msg });
+    console.error("Query error:", err);
+    const msg = "Could not reach server - check console for details";
+    session.messages.push({ role: "error", text: msg });
     appendErrorBubble(msg);
   }
 
@@ -146,9 +157,10 @@ async function submitQuery() {
   scrollBottom();
 }
 
-function usesuggestion(el) {
-  textarea.value = el.textContent;
-  textarea.dispatchEvent(new Event("input"));
+function usesuggestion(queryText) {
+  textarea.value = queryText;
+  textarea.style.height = "auto";
+  textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   submitQuery();
 }
 
@@ -256,10 +268,12 @@ function setLoading(loading) {
 
 function scrollBottom() {
   setTimeout(() => {
+    // Find the scrollable content container (the flex container with overflow-y-auto)
     const container = document.querySelector("main > div:nth-child(2)");
-    if (container) container.scrollTop = container.scrollHeight;
-    else window.scrollTo(0, document.body.scrollHeight);
-  }, 0);
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, 100); // Small delay to ensure DOM has updated
 }
 
 function formatAnswer(text) {
