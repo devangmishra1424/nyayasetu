@@ -248,9 +248,9 @@ function setLoading(loading) {
   sendBtn.disabled = loading;
   const statusText = document.getElementById("status-text");
   if (loading) {
-    statusText.textContent = "SEARCHING ARCHIVES...";
+    statusText.textContent = "SEARCHING...";
   } else {
-    statusText.textContent = "READY FOR PETITION";
+    statusText.textContent = "READY";
   }
 }
 
