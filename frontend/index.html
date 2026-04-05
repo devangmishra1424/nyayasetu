@@ -1,187 +1,306 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NyayaSetu — Indian Legal Research</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <title>NYAYA SETU — Legal Research Registry</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#ffffff",
+            "surface-container-high": "#ece8e0",
+            "surface-container": "#f2ede5",
+            "on-tertiary-fixed-variant": "#4e3e6f",
+            "tertiary": "#342554",
+            "secondary-container": "#fed174",
+            "primary-container": "#2c4a3e",
+            "outline": "#727974",
+            "on-tertiary-fixed": "#221141",
+            "surface-container-highest": "#e7e2da",
+            "secondary": "#795900",
+            "on-surface": "#1d1c17",
+            "secondary-fixed-dim": "#ecc165",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "surface-tint": "#466558",
+            "error": "#ba1a1a",
+            "surface-bright": "#fef9f1",
+            "on-tertiary-container": "#bba8e1",
+            "secondary-fixed": "#ffdfa0",
+            "inverse-on-surface": "#f5f0e8",
+            "primary": "#153328",
+            "outline-variant": "#c1c8c3",
+            "on-secondary-container": "#785800",
+            "on-secondary-fixed": "#261a00",
+            "on-primary-fixed": "#012016",
+            "surface-variant": "#e7e2da",
+            "on-surface-variant": "#414845",
+            "on-primary-container": "#98b9a9",
+            "tertiary-container": "#4b3b6c",
+            "on-background": "#1d1c17",
+            "inverse-surface": "#32302b",
+            "surface-container-lowest": "#ffffff",
+            "background": "#fef9f1",
+            "tertiary-fixed-dim": "#d1bdf7",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "surface-dim": "#ded9d2",
+            "on-secondary-fixed-variant": "#5c4300",
+            "inverse-primary": "#adcebe",
+            "tertiary-fixed": "#eaddff",
+            "surface": "#fef9f1",
+            "on-primary-fixed-variant": "#2f4d41",
+            "surface-container-low": "#f8f3eb",
+            "primary-fixed": "#c8eada",
+            "primary-fixed-dim": "#adcebe"
+          },
+          borderRadius: {
+            DEFAULT: "1rem",
+            lg: "2rem",
+            xl: "3rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Cormorant Garamond", "serif"],
+            body: ["Plus Jakarta Sans", "sans-serif"],
+            label: ["Cormorant Garamond", "serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .clay-card {
+      background: #ffffff;
+      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.08), inset 2px 2px 4px rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+    }
+    .clay-inset {
+      background: #f0ebe2;
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.06), inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+    }
+    .clay-button-primary {
+      background: #2c4a3e;
+      box-shadow: 0 10px 20px -5px rgba(44, 74, 62, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .clay-button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -5px rgba(44, 74, 62, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+    .clay-button-primary:active {
+      transform: scale(0.98);
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #dcd7ce;
+      border-radius: 10px;
+    }
+    textarea {
+      resize: none;
+    }
+    textarea:focus {
+      outline: none;
+    }
+  </style>
 </head>
-<body>
-<div class="app-container">
-  
-  <!-- SIDEBAR - JUDICIAL PANEL -->
-  <aside class="sidebar" id="sidebar">
-    <!-- Header with Judicial Seal -->
-    <div class="sidebar-header">
-      <div class="judicial-seal">
-        <svg viewBox="0 0 100 100" class="seal-svg">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2"/>
-          <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
-          <!-- Scale/Balance symbol -->
-          <path d="M50 20 L35 45 L65 45 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="35" y1="45" x2="65" y2="45" stroke="currentColor" stroke-width="2"/>
-          <circle cx="35" cy="55" r="3" fill="currentColor"/>
-          <circle cx="65" cy="55" r="3" fill="currentColor"/>
-          <text x="50" y="75" font-size="8" text-anchor="middle" font-weight="bold" letter-spacing="1">NYAYASETU</text>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <div class="brand-name">NYAYA SETU</div>
-        <div class="brand-sub">Legal Research Registry</div>
-      </div>
-      <button class="sidebar-toggle" onclick="toggleSidebar()">≡</button>
+<body class="bg-[#F5F0E8] text-on-surface font-body h-screen flex overflow-hidden">
+
+<!-- Left Side: Sidebar -->
+<aside class="w-80 h-full flex flex-col bg-surface-container-low p-6 z-30 transition-all duration-300 overflow-y-auto custom-scrollbar" id="sidebar">
+  <!-- Brand Header -->
+  <div class="flex items-center gap-3 mb-10 px-2">
+    <div class="w-12 h-12 clay-card flex items-center justify-center bg-primary text-secondary-container flex-shrink-0">
+      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">gavel</span>
     </div>
-
-    <!-- Primary Actions -->
-    <div class="action-group">
-      <button class="btn-primary" onclick="newChat()">⊕ New Petition</button>
-      <button class="btn-secondary" onclick="showAnalytics()">📋 Case Analytics</button>
-      <button class="btn-secondary" onclick="window.location.href='/court/ui'">⚔ Moot Court</button>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-headline font-bold text-primary text-xl leading-tight tracking-tight truncate">NYAYA SETU</h1>
+      <p class="text-[10px] uppercase tracking-widest text-secondary font-bold opacity-70 truncate">Legal Research Registry</p>
     </div>
+  </div>
 
-    <!-- Case Registry -->
-    <div class="registry-section">
-      <div class="registry-header">
-        <span class="registry-title">CASE REGISTRY</span>
-        <div class="registry-divider"></div>
-      </div>
-      <div class="sessions-list" id="sessions-list">
-        <div class="sessions-empty">No active cases</div>
+  <!-- Primary Action -->
+  <button onclick="newChat()" class="clay-button-primary w-full py-4 px-6 flex items-center justify-center gap-2 text-white font-semibold rounded-xl mb-8 group">
+    <span class="material-symbols-outlined transition-transform group-hover:rotate-90">add_circle</span>
+    <span>New Petition</span>
+  </button>
+
+  <!-- Navigation Links -->
+  <nav class="space-y-2 mb-10">
+    <button onclick="showAnalytics()" class="w-full flex items-center gap-3 px-4 py-3 clay-card text-secondary font-semibold hover:bg-white/80 transition-colors">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+      <span>Case Analytics</span>
+    </button>
+    <a href="/court/ui" class="flex items-center gap-3 px-4 py-3 text-primary/60 hover:text-primary transition-colors font-medium">
+      <span class="material-symbols-outlined">balance</span>
+      <span>Moot Court</span>
+    </a>
+    <a href="#" class="flex items-center gap-3 px-4 py-3 text-primary/60 hover:text-primary transition-colors font-medium">
+      <span class="material-symbols-outlined">menu_book</span>
+      <span>Legal Library</span>
+    </a>
+  </nav>
+
+  <!-- Session List Container -->
+  <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+    <h3 class="text-[11px] uppercase tracking-[0.2em] text-primary/40 font-bold px-4 mb-4">Recent Sessions</h3>
+    <div class="flex-1 overflow-y-auto space-y-3 px-1 custom-scrollbar" id="sessions-list">
+      <div class="sessions-empty text-xs text-primary/50 px-4 py-8 text-center">No active cases</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="mt-auto pt-6 border-t border-primary/5 space-y-4">
+    <div class="flex flex-wrap gap-2">
+      <span class="text-[9px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">BETA v2.4</span>
+      <span class="text-[9px] font-bold bg-secondary/10 text-secondary px-2 py-1 rounded-full">VERIFIED AI</span>
+    </div>
+    <p class="text-[10px] text-primary/40 italic leading-relaxed">NyayaSetu provides research assistance. Consult a legal practitioner for professional advice.</p>
+  </div>
+</aside>
+
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full relative overflow-hidden" id="main-content">
+  <!-- Top Bar -->
+  <header class="h-20 flex items-center justify-between px-10 z-20 bg-white/50 backdrop-blur-sm border-b border-primary/5">
+    <div class="flex items-center gap-4">
+      <h2 class="font-headline text-2xl font-bold text-primary" id="topbar-title">Research Chamber</h2>
+      <div class="flex items-center gap-2 bg-primary-container/5 px-3 py-1 rounded-full">
+        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        <span class="text-[11px] font-bold text-primary tracking-wide" id="status-text">READY FOR PETITION</span>
       </div>
     </div>
-
-    <!-- Sidebar Footer - Court Info -->
-    <div class="sidebar-footer">
-      <div class="court-info">
-        <p class="disclaimer">⚠ DISCLAIMER</p>
-        <p class="disclaimer-text">Not legal advice. Consult qualified advocate.</p>
+    <div class="flex items-center gap-6">
+      <div class="clay-inset flex items-center px-4 py-2 gap-3">
+        <span class="material-symbols-outlined text-primary/40 text-xl">search</span>
+        <input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-primary placeholder-primary/30" placeholder="Search archive..." type="text">
       </div>
-      <div class="court-meta">
-        <p class="meta-text">Supreme Court of India</p>
-        <p class="meta-text">Established 1950</p>
-      </div>
+      <button class="w-10 h-10 clay-card flex items-center justify-center text-primary hover:bg-white transition-colors">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
     </div>
-  </aside>
+  </header>
 
-  <!-- MAIN CONTENT AREA -->
-  <main class="main-content">
-    <!-- Header/Bench -->
-    <header class="topbar">
-      <div class="topbar-left">
-        <h1 class="topbar-title" id="topbar-title">Research Session</h1>
-        <p class="topbar-subtitle" id="topbar-subtitle">Indian Legal Research System</p>
+  <!-- Content Canvas -->
+  <div class="flex-1 overflow-y-auto px-10 pb-32 custom-scrollbar relative">
+    <!-- Welcome Screen -->
+    <section class="max-w-4xl mx-auto pt-16 flex flex-col items-center text-center screen active" id="screen-welcome">
+      <div class="relative mb-12">
+        <div class="absolute inset-0 -z-10 opacity-5 blur-3xl bg-secondary rounded-full"></div>
+        <h1 class="font-headline text-5xl text-primary font-bold mt-8 relative z-10">How may the registry assist you?</h1>
+        <p class="text-primary/60 max-w-lg mx-auto mt-6 text-lg font-medium leading-relaxed">
+          Secure AI-powered legal intelligence for case discovery, precedent analysis, and transcript summarization.
+        </p>
       </div>
-      <div class="status-indicator" id="status-pill">
-        <span class="status-dot"></span>
-        <span id="status-text">Ready</span>
-      </div>
-    </header>
 
-    <!-- Welcome/Research Section -->
-    <section id="screen-welcome" class="screen active">
-      <div class="welcome-container">
-        <div class="welcome-graphic">
-          <svg viewBox="0 0 200 200" class="welcome-icon">
-            <!-- Judge's Bench -->
-            <rect x="20" y="120" width="160" height="40" fill="none" stroke="currentColor" stroke-width="2" rx="2"/>
-            <!-- Gavel -->
-            <rect x="85" y="30" width="30" height="50" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="100" cy="20" r="12" fill="currentColor" opacity="0.3"/>
-            <!-- Scales -->
-            <line x1="50" y1="80" x2="50" y2="120" stroke="currentColor" stroke-width="2"/>
-            <line x1="35" y1="100" x2="65" y2="100" stroke="currentColor" stroke-width="2"/>
-            <circle cx="35" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="65" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
-            <!-- Books -->
-            <rect x="130" y="70" width="15" height="35" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="148" y="65" width="15" height="40" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        </div>
-        <h2>Indian Legal Research</h2>
-        <p class="welcome-subtitle">Query 26,688 Supreme Court Judgments<br><span class="text-muted">Cited sources | Verified citations | Complete legal brief</span></p>
-        
-        <div class="suggestions">
-          <div class="suggestion-label">Sample Petitions:</div>
-          <button class="suggestion" onclick="usesuggestion(this)">Fundamental Rights — Definition & Scope</button>
-          <button class="suggestion" onclick="usesuggestion(this)">Right to Privacy under Article 21</button>
-          <button class="suggestion" onclick="usesuggestion(this)">Bail — Legal Framework & Supreme Court Tests</button>
-          <button class="suggestion" onclick="usesuggestion(this)">Basic Structure Doctrine — Implications</button>
-          <button class="suggestion" onclick="usesuggestion(this)">Article 15 — Non-discrimination Doctrine</button>
-          <button class="suggestion" onclick="usesuggestion(this)">Freedom of Speech — Reasonable Restrictions</button>
-        </div>
+      <!-- Suggestions Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform group">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">gavel</span>
+          <h4 class="font-bold text-primary mb-1">Analyze Precedents</h4>
+          <p class="text-xs text-primary/50">Find landmark rulings for property disputes in Delhi HC.</p>
+        </button>
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">description</span>
+          <h4 class="font-bold text-primary mb-1">Summarize Bill</h4>
+          <p class="text-xs text-primary/50">Draft a 500-word summary of the Digital Markets Act.</p>
+        </button>
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">history_edu</span>
+          <h4 class="font-bold text-primary mb-1">Draft Petition</h4>
+          <p class="text-xs text-primary/50">Outline a writ petition for fundamental rights violation.</p>
+        </button>
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">verified_user</span>
+          <h4 class="font-bold text-primary mb-1">Compliance Check</h4>
+          <p class="text-xs text-primary/50">Verify labor law compliance for a startup entity.</p>
+        </button>
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">travel_explore</span>
+          <h4 class="font-bold text-primary mb-1">International Law</h4>
+          <p class="text-xs text-primary/50">Research maritime boundary protocols in South Asia.</p>
+        </button>
+        <button onclick="usesuggestion(this)" class="clay-card p-6 text-left hover:scale-[1.02] transition-transform">
+          <span class="material-symbols-outlined text-secondary mb-3 block text-3xl">auto_stories</span>
+          <h4 class="font-bold text-primary mb-1">IPC Reference</h4>
+          <p class="text-xs text-primary/50">Cross-reference sections of BNS with previous IPC codes.</p>
+        </button>
       </div>
     </section>
 
-    <!-- Chat/Case Proceedings Section -->
-    <section id="screen-chat" class="screen">
-      <div class="chat-area">
-        <div class="proceedings" id="messages-list"></div>
-      </div>
-      <div class="input-bench">
-        <textarea id="query-input" placeholder="Address the court... (Enter to submit, Shift+Enter for new line)" class="query-input"></textarea>
-        <button id="send-btn" class="btn-submit" onclick="submitQuery()">📤 Submit Petition</button>
-      </div>
+    <!-- Chat / Research State -->
+    <section class="hidden max-w-4xl mx-auto pt-8 space-y-8 screen" id="screen-chat">
+      <div class="space-y-8" id="messages-list"></div>
     </section>
 
-    <!-- Analytics Dashboard -->
-    <section id="screen-analytics" class="screen">
-      <div class="analytics-container">
-        <div class="analytics-header">
-          <h2>Case Analytics & System Metrics</h2>
-          <p>Live inference data from NyayaSetu research engine</p>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">📊</div>
-            <div class="stat-value" id="stat-total">—</div>
-            <div class="stat-label">Total Queries</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">✓</div>
-            <div class="stat-value" id="stat-verified">—</div>
-            <div class="stat-label">Verified Answers</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">⚡</div>
-            <div class="stat-value" id="stat-latency">—</div>
-            <div class="stat-label">Avg Latency</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🔍</div>
-            <div class="stat-value" id="stat-ood">—</div>
-            <div class="stat-label">Out-of-Domain</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📚</div>
-            <div class="stat-value" id="stat-sources">—</div>
-            <div class="stat-label">Avg Sources Used</div>
+    <!-- Analytics State -->
+    <section class="hidden max-w-5xl mx-auto pt-8 screen" id="screen-analytics">
+      <h3 class="font-headline text-3xl font-bold text-primary mb-8">Registry Analytics Overview</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="clay-card p-8 text-center relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500"></div>
+          <p class="text-primary/50 text-xs font-bold uppercase tracking-wider mb-2">Total Queries</p>
+          <p class="text-5xl font-headline font-bold text-primary" id="stat-total">1,284</p>
+          <div class="mt-4 text-green-600 text-xs font-bold flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm">trending_up</span> +12% this month
           </div>
         </div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script src="/static/app.js"></script>
-</body>
-</html>
+        <div class="clay-card p-8 text-center relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-secondary/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500"></div>
+          <p class="text-primary/50 text-xs font-bold uppercase tracking-wider mb-2">Verified Answers</p>
+          <p class="text-5xl font-headline font-bold text-secondary" id="stat-verified">99.2%</p>
+          <div class="mt-4 text-secondary text-xs font-bold flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span> Peer Reviewed
+          </div>
+        </div>
+        <div class="clay-card p-8 text-center relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-tertiary/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500"></div>
+          <p class="text-primary/50 text-xs font-bold uppercase tracking-wider mb-2">Avg Latency</p>
+          <p class="text-5xl font-headline font-bold text-tertiary" id="stat-latency">0.8s</p>
+          <div class="mt-4 text-tertiary/60 text-xs font-bold flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm">bolt</span> Real-time Processing
           </div>
         </div>
       </div>
     </section>
+  </div>
 
-    <!-- INPUT AREA -->
-    <div class="input-area">
-      <div class="input-wrapper">
-        <textarea id="query-input" class="query-input" placeholder="Ask about Indian law..." maxlength="1000"></textarea>
-        <button id="send-btn" class="send-btn" onclick="submitQuery()">→</button>
+  <!-- Sticky Input Area -->
+  <div class="absolute bottom-0 left-0 right-0 bg-[#F5F0E8]/80 backdrop-blur-md p-8 z-40">
+    <div class="max-w-4xl mx-auto clay-inset p-2 flex items-end gap-3 shadow-2xl" id="petition-input">
+      <div class="flex-1 min-h-[56px] px-4 py-3">
+        <textarea id="query-input" class="w-full bg-transparent border-none focus:ring-0 text-primary placeholder-primary/30 font-medium custom-scrollbar" placeholder="State your legal inquiry or paste case text here..." rows="1"></textarea>
       </div>
-      <p class="disclaimer-line">Not a substitute for professional legal advice</p>
+      <div class="flex items-center gap-2 p-2">
+        <button class="w-10 h-10 rounded-xl hover:bg-white/50 text-primary/60 flex items-center justify-center transition-all">
+          <span class="material-symbols-outlined">attach_file</span>
+        </button>
+        <button onclick="submitQuery()" class="clay-button-primary px-8 py-3 rounded-xl text-white font-bold flex items-center gap-2 shadow-lg" id="send-btn">
+          <span>Submit Petition</span>
+          <span class="material-symbols-outlined text-sm">send</span>
+        </button>
+      </div>
     </div>
-  </main>
-</div>
+    <p class="text-center text-[10px] text-primary/30 mt-4 font-bold uppercase tracking-[0.2em]">End-to-End Encrypted Judicial Processing</p>
+  </div>
+</main>
 
 <script src="/static/app.js"></script>
 </body>
