@@ -24,7 +24,7 @@ _hf_client = None
 
 def _init_openrouter():
     global _openrouter_client
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    api_key = os.getenv("OPENROUTER_API_KEY" )
     if not api_key:
         logger.warning("OPENROUTER_API_KEY not set — OpenRouter disabled")
         return False
