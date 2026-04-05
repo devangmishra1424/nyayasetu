@@ -54,12 +54,16 @@ if (document.readyState === "loading") {
 
 function showScreen(name) {
   console.log("showScreen called with name:", name);
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".screen").forEach(s => {
+    s.classList.remove("active");
+    s.classList.add("hidden");
+  });
   const screenEl = document.getElementById("screen-" + name);
   if (!screenEl) {
     console.error("Screen element not found:", "screen-" + name);
     return;
   }
+  screenEl.classList.remove("hidden");
   screenEl.classList.add("active");
   console.log("Screen switched to:", name);
 }
