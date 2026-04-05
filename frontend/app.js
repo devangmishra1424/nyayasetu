@@ -5,25 +5,52 @@ let activeSessionId = null;
 let isLoading = false;
 let sidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
-const textarea = document.getElementById("query-input");
-const sendBtn = document.getElementById("send-btn");
-const messagesList = document.getElementById("messages-list");
+let textarea, sendBtn, messagesList;
 
-if (sidebarCollapsed) {
-  document.getElementById("sidebar").classList.add("collapsed");
+// Wait for DOM to be ready
+function initializeApp() {
+  console.log("=== App Initialization ===");
+  
+  textarea = document.getElementById("query-input");
+  sendBtn = document.getElementById("send-btn");
+  messagesList = document.getElementById("messages-list");
+  
+  console.log("Elements found - textarea:", !!textarea, "sendBtn:", !!sendBtn, "messagesList:", !!messagesList);
+  
+  if (!textarea || !sendBtn || !messagesList) {
+    console.error("CRITICAL: Required elements not found in DOM!");
+    console.error("textarea:", textarea);
+    console.error("sendBtn:", sendBtn);
+    console.error("messagesList:", messagesList);
+    return;
+  }
+
+  if (sidebarCollapsed) {
+    document.getElementById("sidebar").classList.add("collapsed");
+  }
+
+  textarea.addEventListener("input", () => {
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+  });
+
+  textarea.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitQuery();
+    }
+  });
+  
+  console.log("App initialization complete");
 }
 
-textarea.addEventListener("input", () => {
-  textarea.style.height = "auto";
-  textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
-});
-
-textarea.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    submitQuery();
-  }
-});
+// Initialize when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeApp);
+} else {
+  // DOM already loaded (script might be async or deferred)
+  initializeApp();
+}
 
 function showScreen(name) {
   console.log("showScreen called with name:", name);
