@@ -197,6 +197,10 @@ def process_user_argument(
     
     phase = session["phase"]
     
+    # Validate user is allowed to submit
+    if phase not in ["briefing", "rounds", "cross_examination", "closing"]:
+        return {"error": f"Session is in {phase} phase. Cannot accept submissions."}
+    
     # Route to appropriate handler
     try:
         if phase == "briefing":
@@ -319,6 +323,9 @@ def _handle_briefing(session_id: str, user_argument: str, session: Dict) -> Dict
             user_fell_in=False,
         )
     
+    # UPDATE: After briefing, user is now in Round 1 and should submit their argument
+    update_session(session_id, {"awaiting_action": "user"})
+    
     return {
         "opposing_response": opposing_response,
         "judge_question": judge_question,
@@ -339,6 +346,11 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
     max_rounds = session["max_rounds"]
     user_side = session["user_side"]
     user_label = "PETITIONER'S COUNSEL" if user_side == "petitioner" else "RESPONDENT'S COUNSEL"
+    
+    # TURN VALIDATION: Only user should be able to submit arguments in "rounds" phase
+    awaiting = session.get("awaiting_action", "user")
+    if awaiting != "user":
+        return {"error": f"It is currently waiting for {awaiting}'s submission. You cannot speak now."}
     
     # Add user argument to transcript
     add_transcript_entry(
@@ -439,10 +451,17 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
     # Registrar announcement
     if new_phase == "cross_examination":
         registrar_note = build_round_announcement(session, new_round, "cross_examination")
+        # First cross-exam question will be generated, user will answer it
+        next_awaiting = "user"  
     elif new_round <= max_rounds:
         registrar_note = build_round_announcement(session, new_round, "rounds")
+        next_awaiting = "user"  # User gets to submit next round argument
     else:
         registrar_note = build_round_announcement(session, new_round, "closing")
+        next_awaiting = "user"  # User gives closing arguments
+    
+    # UPDATE: Mark that awaiting_action should be set AFTER round advances
+    update_session(session_id, {"awaiting_action": next_awaiting})
     
     add_transcript_entry(
         session_id=session_id,
@@ -451,6 +470,36 @@ def _handle_round(session_id: str, user_argument: str, session: Dict) -> Dict:
         content=registrar_note,
         entry_type="announcement",
     )
+    
+    # If transitioning to cross-examination, generate the first cross-exam question now
+    if new_phase == "cross_examination":
+        fresh_session = get_session(session_id)
+        
+        # Retrieve precedents for cross-exam context
+        combined_context = _build_full_context(fresh_session)
+        
+        cross_exam_messages = build_cross_examination_prompt(
+            session=fresh_session,
+            question_number=1,
+            retrieved_context=combined_context,
+        )
+        try:
+            first_cross_question = _call_llm(cross_exam_messages)
+        except Exception as e:
+            logger.error(f"Cross-exam question generation failed: {e}")
+            first_cross_question = (
+                "Counsel, in your submitted brief, you stated that [key assertion]. "
+                "Can you elaborate on the legal precedent supporting this position?"
+            )
+        
+        add_transcript_entry(
+            session_id=session_id,
+            speaker="OPPOSING_COUNSEL",
+            role_label="RESPONDENT'S COUNSEL" if session["user_side"] == "petitioner" else "PETITIONER'S COUNSEL",
+            content=first_cross_question,
+            entry_type="cross_exam_question",
+            metadata={"question_number": 1},
+        )
     
     # Detect concessions
     new_concessions = _detect_concessions(user_argument, session_id, current_round)
@@ -478,12 +527,18 @@ def _handle_cross_exam_answer(
     user_side = session["user_side"]
     user_label = "PETITIONER'S COUNSEL" if user_side == "petitioner" else "RESPONDENT'S COUNSEL"
     
-    # Count how many cross-exam questions have been asked
-    cross_entries = [
+    # TURN VALIDATION: Only user should answer during cross-exam
+    awaiting = session.get("awaiting_action", "user")
+    if awaiting != "user":
+        return {"error": f"Cannot submit answer now. Awaiting {awaiting}'s action."}
+    
+    # Count how many QUESTIONS have been asked by opposing counsel
+    all_questions = [
         e for e in session.get("transcript", [])
-        if e.get("phase") == "cross_examination"
+        if e.get("speaker") == "OPPOSING_COUNSEL" and e.get("entry_type") in ["cross_exam_question", "question", "answer_request"]
     ]
-    question_number = len([e for e in cross_entries if e.get("speaker") == "OPPOSING_COUNSEL"]) + 1
+    current_question_number = len(all_questions)  # This is the question the user is answering
+    next_question_number = current_question_number + 1  # This will be the next question if there is one
     
     # Add user's answer
     add_transcript_entry(
@@ -497,8 +552,8 @@ def _handle_cross_exam_answer(
     # Detect concessions in answer
     new_concessions = _detect_concessions(user_answer, session_id, session["current_round"])
     
-    # If more questions remaining (max 3), get next question
-    if question_number < 3:
+    # If more questions remaining (max 3 total), get next question
+    if next_question_number <= 3:
         query = " ".join(session.get("legal_issues", []))
         retrieved_precedents = _retrieve_for_court(query, session)
         
@@ -508,27 +563,30 @@ def _handle_cross_exam_answer(
         
         cross_messages = build_cross_examination_prompt(
             session=fresh_session,
-            question_number=question_number + 1,
+            question_number=next_question_number,
             retrieved_context=combined_context,
         )
         
         try:
             next_question = _call_llm(cross_messages)
         except Exception as e:
-            next_question = f"Question {question_number + 1}: Counsel, would you agree that [question]?"
+            next_question = f"Question {next_question_number}: Counsel, would you agree that [question]?"
         
         add_transcript_entry(
             session_id=session_id,
             speaker="OPPOSING_COUNSEL",
             role_label="RESPONDENT'S COUNSEL" if user_side == "petitioner" else "PETITIONER'S COUNSEL",
             content=next_question,
-            entry_type="question",
+            entry_type="cross_exam_question",
         )
+        
+        # UPDATE awaiting_action: Waiting for answer to next question
+        update_session(session_id, {"awaiting_action": "user"})
         
         return {
             "opposing_response": next_question,
             "judge_question": "",
-            "registrar_note": f"Question {question_number + 1} of 3.",
+            "registrar_note": f"Question {next_question_number} of 3.",
             "trap_detected": False,
             "trap_warning": "",
             "new_concessions": new_concessions,
@@ -551,6 +609,9 @@ def _handle_cross_exam_answer(
             entry_type="announcement",
         )
         
+        # UPDATE awaiting_action: User gets closing arguments
+        update_session(session_id, {"awaiting_action": "user"})
+        
         return {
             "opposing_response": "",
             "judge_question": "",
@@ -566,10 +627,26 @@ def _handle_cross_exam_answer(
 
 
 def _handle_closing(session_id: str, user_closing: str, session: Dict) -> Dict:
-    """Handle closing arguments from both sides, then generate analysis."""
+    """Handle closing arguments from both sides, then generate analysis.
+    
+    In proper moot court procedure:
+    - Petitioner's counsel gives closing first
+    - Respondent's counsel gives rebuttal closing
+    - Petitioner does NOT get final rebuttal
+    
+    This handler manages both sides appropriately based on user_side.
+    """
     
     user_side = session["user_side"]
     user_label = "PETITIONER'S COUNSEL" if user_side == "petitioner" else "RESPONDENT'S COUNSEL"
+    
+    # Check if this is first or second closing
+    closing_count = len([e for e in session.get("transcript", []) if e.get("entry_type") == "closing_argument"])
+    
+    # TURN VALIDATION
+    awaiting = session.get("awaiting_action", "user")
+    if awaiting != "user":
+        return {"error": f"Cannot submit closing now. It is {awaiting}'s turn."}
     
     # Add user's closing
     add_transcript_entry(
@@ -582,33 +659,68 @@ def _handle_closing(session_id: str, user_closing: str, session: Dict) -> Dict:
     
     fresh_session = get_session(session_id)
     
-    # Opposing counsel's closing
-    closing_messages = build_opposing_closing_prompt(fresh_session)
-    try:
-        opposing_closing = _call_llm(closing_messages)
-    except Exception as e:
-        opposing_closing = (
-            "My Lords, for the reasons submitted throughout these proceedings, "
-            "we respectfully submit that the petition deserves to be dismissed."
+    # If user is petitioner (first closing), get opposing rebuttal
+    # If user is respondent, we're done and can finalize
+    if user_side == "petitioner":
+        # Get respondent's rebuttal closing
+        closing_messages = build_opposing_closing_prompt(fresh_session)
+        try:
+            opposing_closing = _call_llm(closing_messages)
+        except Exception as e:
+            opposing_closing = (
+                "My Lords, with respect, the submissions of the Petitioner's Counsel "
+                "are fundamentally flawed. For the reasons we have advanced, the petition should be dismissed."
+            )
+        
+        add_transcript_entry(
+            session_id=session_id,
+            speaker="OPPOSING_COUNSEL",
+            role_label="RESPONDENT'S COUNSEL",
+            content=opposing_closing,
+            entry_type="closing_argument",
         )
+        
+        # Mark that session is ending
+        update_session(session_id, {"awaiting_action": "judge"})
+        
+        intermediate_return = {
+            "opposing_response": opposing_closing,
+            "judge_question": "",
+            "registrar_note": "Respondent's counsel has concluded. The matter is now with the Court.",
+            "trap_detected": False,
+            "trap_warning": "",
+            "new_concessions": [],
+            "round_number": session["current_round"],
+            "phase": "closing",
+            "closing_step": "second_closing_done",
+            "ready_for_analysis": False,
+            "session_ended": False,
+        }
+    else:
+        # User is respondent and just gave rebuttal — session is complete
+        update_session(session_id, {"awaiting_action": "judge"})
+        intermediate_return = {
+            "opposing_response": "",
+            "judge_question": "",
+            "registrar_note": "Respondent's counsel has concluded. The matter is now with the Court.",
+            "trap_detected": False,
+            "trap_warning": "",
+            "new_concessions": [],
+            "round_number": session["current_round"],
+            "phase": "closing",
+            "closing_step": "respondent_closing_done",
+            "ready_for_analysis": True,
+            "session_ended": False,
+        }
     
-    add_transcript_entry(
-        session_id=session_id,
-        speaker="OPPOSING_COUNSEL",
-        role_label="RESPONDENT'S COUNSEL" if user_side == "petitioner" else "PETITIONER'S COUNSEL",
-        content=opposing_closing,
-        entry_type="closing_argument",
-    )
-    
-    # Judge's final observations
+    # Get judge's final observations
     fresh_session = get_session(session_id)
     judge_closing_messages = build_judge_closing_prompt(fresh_session)
     try:
         judge_final = _call_llm(judge_closing_messages)
     except Exception as e:
         judge_final = (
-            "The court has heard submissions from both sides. "
-            "The matter is reserved for orders."
+            "The court has heard submissions from both sides. The judgment is reserved."
         )
     
     add_transcript_entry(
@@ -632,7 +744,7 @@ def _handle_closing(session_id: str, user_closing: str, session: Dict) -> Dict:
     advance_phase(session_id)
     
     return {
-        "opposing_response": opposing_closing,
+        "opposing_response": intermediate_return["opposing_response"],
         "judge_question": judge_final,
         "registrar_note": registrar_final,
         "trap_detected": False,
@@ -687,10 +799,15 @@ def process_objection(
     objection_type: str,
     objection_text: str,
 ) -> Dict:
-    """Handle a user-raised objection."""
+    """Handle a user-raised objection. Pauses round and requests judge ruling."""
     session = get_session(session_id)
     if not session:
         return {"error": "Session not found"}
+    
+    # Objection pauses the round — mark round as "objection_pending"
+    phase = session.get("phase", "rounds")
+    if phase not in ["rounds", "cross_examination"]:
+        return {"error": "Cannot raise objection in current phase"}
     
     # Get what the objection is about from last transcript entry
     transcript = session.get("transcript", [])
@@ -722,9 +839,14 @@ def process_objection(
     
     sustained = "sustained" in ruling.lower()
     
+    # After ruling, resume normal flow — mark awaiting_action as "user" to continue
+    update_session(session_id, {"awaiting_action": "user"})
+    
     return {
         "ruling": ruling,
         "sustained": sustained,
+        "objection_resolved": True,
+        "can_continue": True,
     }
 
 

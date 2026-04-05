@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYAYA SETU — Legal Research Registry</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#ffffff",
+            "surface-container-high": "#ece8e0",
+            "surface-container": "#f2ede5",
+            "on-tertiary-fixed-variant": "#4e3e6f",
+            "tertiary": "#342554",
+            "secondary-container": "#fed174",
+            "primary-container": "#2c4a3e",
+            "outline": "#727974",
+            "on-tertiary-fixed": "#221141",
+            "surface-container-highest": "#e7e2da",
+            "secondary": "#795900",
+            "on-surface": "#1d1c17",
+            "secondary-fixed-dim": "#ecc165",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "surface-tint": "#466558",
+            "error": "#ba1a1a",
+            "surface-bright": "#fef9f1",
+            "on-tertiary-container": "#bba8e1",
+            "secondary-fixed": "#ffdfa0",
+            "inverse-on-surface": "#f5f0e8",
+            "primary": "#153328",
+            "outline-variant": "#c1c8c3",
+            "on-secondary-container": "#785800",
+            "on-secondary-fixed": "#261a00",
+            "on-primary-fixed": "#012016",
+            "surface-variant": "#e7e2da",
+            "on-surface-variant": "#414845",
+            "on-primary-container": "#98b9a9",
+            "tertiary-container": "#4b3b6c",
+            "on-background": "#1d1c17",
+            "inverse-surface": "#32302b",
+            "surface-container-lowest": "#ffffff",
+            "background": "#fef9f1",
+            "tertiary-fixed-dim": "#d1bdf7",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "surface-dim": "#ded9d2",
+            "on-secondary-fixed-variant": "#5c4300",
+            "inverse-primary": "#adcebe",
+            "tertiary-fixed": "#eaddff",
+            "surface": "#fef9f1",
+            "on-primary-fixed-variant": "#2f4d41",
+            "surface-container-low": "#f8f3eb",
+            "primary-fixed": "#c8eada",
+            "primary-fixed-dim": "#adcebe"
+          },
+          borderRadius: {
+            DEFAULT: "1rem",
+            lg: "2rem",
+            xl: "3rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Cormorant Garamond", "serif"],
+            body: ["Plus Jakarta Sans", "sans-serif"],
+            label: ["Cormorant Garamond", "serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .clay-card {
+      background: #ffffff;
+      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.08), inset 2px 2px 4px rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+    }
+    .clay-inset {
+      background: #f0ebe2;
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.06), inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+    }
+    .clay-button-primary {
+      background: #2c4a3e;
+      box-shadow: 0 10px 20px -5px rgba(44, 74, 62, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .clay-button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -5px rgba(44, 74, 62, 0.5), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+    .clay-button-primary:active {
+      transform: scale(0.98);
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #dcd7ce;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-[#F5F0E8] text-on-surface font-body h-screen flex overflow-hidden">
+<div class="app-container">
+  
+  <!-- SIDEBAR - JUDICIAL PANEL -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Header with Judicial Seal -->
+    <div class="sidebar-header">
+      <div class="judicial-seal">
+        <svg viewBox="0 0 100 100" class="seal-svg">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <!-- Scale/Balance symbol -->
+          <path d="M50 20 L35 45 L65 45 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="35" y1="45" x2="65" y2="45" stroke="currentColor" stroke-width="2"/>
+          <circle cx="35" cy="55" r="3" fill="currentColor"/>
+          <circle cx="65" cy="55" r="3" fill="currentColor"/>
+          <text x="50" y="75" font-size="8" text-anchor="middle" font-weight="bold" letter-spacing="1">NYAYASETU</text>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">NYAYA SETU</div>
+        <div class="brand-sub">Legal Research Registry</div>
+      </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()">≡</button>
+    </div>
+
+    <!-- Primary Actions -->
+    <div class="action-group">
+      <button class="btn-primary" onclick="newChat()">⊕ New Petition</button>
+      <button class="btn-secondary" onclick="showAnalytics()">📋 Case Analytics</button>
+      <button class="btn-secondary" onclick="window.location.href='/court/ui'">⚔ Moot Court</button>
+    </div>
+
+    <!-- Case Registry -->
+    <div class="registry-section">
+      <div class="registry-header">
+        <span class="registry-title">CASE REGISTRY</span>
+        <div class="registry-divider"></div>
+      </div>
+      <div class="sessions-list" id="sessions-list">
+        <div class="sessions-empty">No active cases</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer - Court Info -->
+    <div class="sidebar-footer">
+      <div class="court-info">
+        <p class="disclaimer">⚠ DISCLAIMER</p>
+        <p class="disclaimer-text">Not legal advice. Consult qualified advocate.</p>
+      </div>
+      <div class="court-meta">
+        <p class="meta-text">Supreme Court of India</p>
+        <p class="meta-text">Established 1950</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="main-content">
+    <!-- Header/Bench -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title" id="topbar-title">Research Session</h1>
+        <p class="topbar-subtitle" id="topbar-subtitle">Indian Legal Research System</p>
+      </div>
+      <div class="status-indicator" id="status-pill">
+        <span class="status-dot"></span>
+        <span id="status-text">Ready</span>
+      </div>
+    </header>
+
+    <!-- Welcome/Research Section -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-container">
+        <div class="welcome-graphic">
+          <svg viewBox="0 0 200 200" class="welcome-icon">
+            <!-- Judge's Bench -->
+            <rect x="20" y="120" width="160" height="40" fill="none" stroke="currentColor" stroke-width="2" rx="2"/>
+            <!-- Gavel -->
+            <rect x="85" y="30" width="30" height="50" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="100" cy="20" r="12" fill="currentColor" opacity="0.3"/>
+            <!-- Scales -->
+            <line x1="50" y1="80" x2="50" y2="120" stroke="currentColor" stroke-width="2"/>
+            <line x1="35" y1="100" x2="65" y2="100" stroke="currentColor" stroke-width="2"/>
+            <circle cx="35" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="65" cy="105" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <!-- Books -->
+            <rect x="130" y="70" width="15" height="35" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="148" y="65" width="15" height="40" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h2>Indian Legal Research</h2>
+        <p class="welcome-subtitle">Query 26,688 Supreme Court Judgments<br><span class="text-muted">Cited sources | Verified citations | Complete legal brief</span></p>
+        
+        <div class="suggestions">
+          <div class="suggestion-label">Sample Petitions:</div>
+          <button class="suggestion" onclick="usesuggestion(this)">Fundamental Rights — Definition & Scope</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Right to Privacy under Article 21</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Bail — Legal Framework & Supreme Court Tests</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Basic Structure Doctrine — Implications</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Article 15 — Non-discrimination Doctrine</button>
+          <button class="suggestion" onclick="usesuggestion(this)">Freedom of Speech — Reasonable Restrictions</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chat/Case Proceedings Section -->
+    <section id="screen-chat" class="screen">
+      <div class="chat-area">
+        <div class="proceedings" id="messages-list"></div>
+      </div>
+      <div class="input-bench">
+        <textarea id="query-input" placeholder="Address the court... (Enter to submit, Shift+Enter for new line)" class="query-input"></textarea>
+        <button id="send-btn" class="btn-submit" onclick="submitQuery()">📤 Submit Petition</button>
+      </div>
+    </section>
+
+    <!-- Analytics Dashboard -->
+    <section id="screen-analytics" class="screen">
+      <div class="analytics-container">
+        <div class="analytics-header">
+          <h2>Case Analytics & System Metrics</h2>
+          <p>Live inference data from NyayaSetu research engine</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Queries</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✓</div>
+            <div class="stat-value" id="stat-verified">—</div>
+            <div class="stat-label">Verified Answers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-value" id="stat-latency">—</div>
+            <div class="stat-label">Avg Latency</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-value" id="stat-ood">—</div>
+            <div class="stat-label">Out-of-Domain</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-value" id="stat-sources">—</div>
+            <div class="stat-label">Avg Sources Used</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea id="query-input" class="query-input" placeholder="Ask about Indian law..." maxlength="1000"></textarea>
+        <button id="send-btn" class="send-btn" onclick="submitQuery()">→</button>
+      </div>
+      <p class="disclaimer-line">Not a substitute for professional legal advice</p>
+    </div>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
