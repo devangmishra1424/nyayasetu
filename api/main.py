@@ -330,7 +330,7 @@ def court_new_session(request: NewSessionRequest):
     )
     
     # Registrar opens the session
-    from src.court.session import get_session, add_transcript_entry
+    from src.court.session import get_session, add_transcript_entry, update_session
     session = get_session(session_id)
     opening = build_round_announcement(session, 0, "briefing")
     add_transcript_entry(
@@ -340,6 +340,9 @@ def court_new_session(request: NewSessionRequest):
         content=opening,
         entry_type="announcement",
     )
+    
+    # Initialize: User is ready to submit briefing (opening argument)
+    update_session(session_id, {"awaiting_action": "user"})
     
     return {
         "session_id": session_id,
@@ -386,7 +389,7 @@ def court_import_session(request: ImportSessionRequest):
         case_brief=case_brief,
     )
     
-    from src.court.session import get_session
+    from src.court.session import get_session, add_transcript_entry, update_session
     session = get_session(session_id)
     opening = build_round_announcement(session, 0, "briefing")
     add_transcript_entry(
@@ -396,6 +399,9 @@ def court_import_session(request: ImportSessionRequest):
         content=opening,
         entry_type="announcement",
     )
+    
+    # Initialize: User is ready to submit briefing (opening argument)
+    update_session(session_id, {"awaiting_action": "user"})
     
     return {
         "session_id": session_id,

@@ -599,7 +599,8 @@ def _handle_cross_exam_answer(
     else:
         # Cross-examination complete — advance to closing
         advance_phase(session_id)
-        registrar_note = build_round_announcement(session, session["current_round"], "closing")
+        fresh_session = get_session(session_id)
+        registrar_note = build_round_announcement(fresh_session, fresh_session["current_round"], "closing")
         
         add_transcript_entry(
             session_id=session_id,
@@ -609,7 +610,28 @@ def _handle_cross_exam_answer(
             entry_type="announcement",
         )
         
-        # UPDATE awaiting_action: User gets closing arguments
+        # If user is RESPONDENT, opposing (PETITIONER) closes first → user rebuts
+        # If user is PETITIONER, user closes first → opposing rebuts
+        if session["user_side"] == "respondent":
+            # Generate petitioner's closing first
+            closing_messages = build_opposing_closing_prompt(fresh_session)
+            try:
+                opposing_closing = _call_llm(closing_messages)
+            except Exception as e:
+                opposing_closing = (
+                    "My Lords, the arguments advanced by Respondent's Counsel are fundamentally flawed. "
+                    "For the reasons submitted, we pray for relief in the Petition."
+                )
+            
+            add_transcript_entry(
+                session_id=session_id,
+                speaker="OPPOSING_COUNSEL",
+                role_label="PETITIONER'S COUNSEL",
+                content=opposing_closing,
+                entry_type="closing_argument",
+            )
+        
+        # UPDATE awaiting_action: User gets to submit their closing
         update_session(session_id, {"awaiting_action": "user"})
         
         return {
@@ -619,7 +641,7 @@ def _handle_cross_exam_answer(
             "trap_detected": False,
             "trap_warning": "",
             "new_concessions": new_concessions,
-            "round_number": session["current_round"],
+            "round_number": fresh_session["current_round"],
             "phase": "closing",
             "cross_exam_complete": True,
             "session_ended": False,
