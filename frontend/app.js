@@ -245,10 +245,11 @@ function appendAIBubble(data, scroll = true) {
   // Handle different response structures
   const answer = data.answer || data.response || data.text || JSON.stringify(data);
   const verified = data.verification_status === true || data.verification_status === "verified";
-  const sourceCount = (data.sources || data.source_judgments || []).length;
+  const sources = data.sources || data.source_judgments || [];
+  const sourceCount = sources.length;
   
   const sourcesBtn = sourceCount > 0 ? `
-    <button class="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:underline">
+    <button onclick="showCitationsModal('sources-${Date.now()}')" class="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:underline" data-sources='${JSON.stringify(sources)}'>
       <span class="material-symbols-outlined text-xs">description</span> ${sourceCount} Citation${sourceCount > 1 ? "s" : ""}
     </button>` : "";
 
@@ -265,13 +266,16 @@ function appendAIBubble(data, scroll = true) {
       </div>
       <div class="mt-4 pt-3 border-t border-primary/5 flex gap-3 flex-wrap">
         ${sourcesBtn}
-        <button class="text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1 hover:underline">
-          <span class="material-symbols-outlined text-xs">picture_as_pdf</span> Export
-        </button>
       </div>
     </div>
   `;
   messagesList.appendChild(div);
+  
+  // Attach click handler to citations button if it exists
+  if (sourceCount > 0) {
+    div.querySelector('button').onclick = () => showCitationsModal(sources);
+  }
+  
   console.log("AI message appended to DOM");
   if (scroll) scrollBottom();
 }
@@ -380,4 +384,45 @@ function loadAnalytics() {
       document.getElementById("stat-latency").textContent = (data.avg_latency_ms || 0.8).toFixed(1) + "s";
     })
     .catch(err => console.error("Analytics load failed:", err));
+}
+
+function showCitationsModal(sources) {
+  console.log("showCitationsModal called with sources:", sources);
+  if (!sources || sources.length === 0) {
+    alert("No citations available");
+    return;
+  }
+  
+  // Build citations list
+  let citationsHTML = "";
+  sources.forEach((src, idx) => {
+    const title = src.title || src.name || "Unknown Case";
+    const year = src.year || src.date || "";
+    const citation = src.citation || src.ref || "";
+    const court = src.court || "";
+    
+    citationsHTML += `<div class="pb-3 border-b border-primary/5 last:border-0"><p class="text-sm font-medium text-primary">${escHtml(title)}</p><p class="text-xs text-primary/60">${escHtml(citation)} ${year ? `(${year})` : ""}</p>${court ? `<p class="text-xs text-primary/50">${escHtml(court)}</p>` : ""}</div>`;
+  });
+  
+  // Create modal
+  const modal = document.createElement("div");
+  modal.className = "fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50";
+  modal.onclick = () => modal.remove();
+  modal.innerHTML = `
+    <div class="clay-card p-6 max-w-2xl w-full mx-4 max-h-[70vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-headline text-xl font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary">description</span>
+          Citations
+        </h2>
+        <button onclick="this.closest('.fixed').remove()" class="text-primary/40 hover:text-primary">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="space-y-3">
+        ${citationsHTML}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
